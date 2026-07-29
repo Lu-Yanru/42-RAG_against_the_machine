@@ -1,0 +1,25 @@
+[project]
+name = "42-rag-against-the-machine"
+version = "0.1.0"
+description = "A Retrieval-Augmented Generation (RAG) system that answers questions about a codebase."
+authors = [
+	{name = "yanlu", email = "yanlu@student.42berlin.de"}
+]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fire>=0.7.1",
+    "pydantic>=2.13.4",
+    "python-dotenv>=1.2.2",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.0,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "flake8>=7.3.0",
+    "mypy>=2.3.0",
+    "pytest>=9.1.1",
+]
