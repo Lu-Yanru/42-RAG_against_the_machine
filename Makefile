@@ -36,4 +36,8 @@ lint-strict:
 
 re: fclean all
 
+# RAG commands
+index:
+	uv run python -m src index
+
 .PHONY: all install run help debug clean fclean lint lint-strict re

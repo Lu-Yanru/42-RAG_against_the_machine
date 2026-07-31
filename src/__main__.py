@@ -1,5 +1,12 @@
+from src.cli import CLI
+import fire
+
+
 def main() -> None:
-    print("Hello world!")
+    try:
+        fire.Fire(CLI)
+    except KeyboardInterrupt:
+        print("Interrputed by user.")
 
 
 if __name__ == "__main__":
