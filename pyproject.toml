@@ -11,11 +11,19 @@ dependencies = [
     "fire>=0.7.1",
     "pydantic>=2.13.4",
     "python-dotenv>=1.2.2",
+    "rank-bm25>=0.2.2",
+    "torch>=2.13.0",
+    "tqdm>=4.70.0",
+    "transformers>=5.14.1",
 ]
 
 [build-system]
 requires = ["uv_build>=0.12.0,<0.13.0"]
 build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "src"
+module-root = ""
 
 [dependency-groups]
 dev = [

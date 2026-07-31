@@ -26,12 +26,12 @@ Two distinct chunking strategies are implemented for the two types of files:
 
 Chunk size is configurable through a CLI argument (`--max_chunk_size`), with a default of 2000 characters.
 
-The index is stored under `data/processed/`.
+The index is stored under `data/processed`.
 
 ### Retrieval method: BM25
 Search the index and returns the top-k most relevant chunks to the prompt. Each result is a source location (a file path).
 
-The result is stored as a JSON file under ``.
+The result is stored as a JSON file under `data/output/search_results`.
 
 ### Performance analysis
 The retrieval quality is measured with the **recall@k** metric.
@@ -175,3 +175,4 @@ The results are saved as JSON files in the following format:
     "k": 10
 
 ## Resources
+- [Python Fire library documentation](https://github.com/google/python-fire)
