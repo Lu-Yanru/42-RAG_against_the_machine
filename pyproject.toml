@@ -32,6 +32,10 @@ dev = [
     "pytest>=9.1.1",
 ]
 
+[[tool.mypy.overrides]]
+module = "fire"
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test*.py"]
