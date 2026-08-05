@@ -1,10 +1,32 @@
+import sys
+
+from src.ingest.chunking import ChunkError, TextChunker
+from src.ingest.loader import Loader, LoadError
+
+
 class CLI:
     """Handles the CLI."""
 
     @staticmethod
     def index(max_chunk_size: int = 2000) -> None:
         print(f"max_chunk_size: {max_chunk_size}")
-        print("Ingestion complete! Indices saved under data/processed/")
+        try:
+            loader = Loader()
+            print(loader.txt_files[0].file_path)
+            print(loader.txt_files[0].line_offsets[0])
+        except LoadError as e:
+            print(e, file=sys.stderr)
+            exit(1)
+
+        try:
+            text_chunker = TextChunker(loader.txt_files, max_chunk_size, "txt")
+            text_chunks = text_chunker.chunk()
+            print(text_chunks[0].content)
+            print(text_chunks[0].first_character_index)
+            print(text_chunks[0].last_character_index)
+            print("Ingestion complete! Indices saved under data/processed/")
+        except ChunkError as e:
+            print(e, file=sys.stderr)
 
     @staticmethod
     def search(query: str, k: int = 5) -> None:

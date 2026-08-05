@@ -1,7 +1,8 @@
 import ast
 from pathlib import Path
+import pytest
 
-from src.ingest.loader import Loader
+from src.ingest.loader import Loader, LoadError
 
 FIXTURE_ROOT = Path(__file__).parent / "fixtures" / "mini_repo"
 
@@ -77,12 +78,11 @@ def test_empty_file_loads_without_crashing():
 
 
 def test_missing_root_directory_returns_no_files_not_a_crash(capsys):
-    loader = Loader(raw_path=str(FIXTURE_ROOT / "does_not_exist"))
-    assert loader.py_files == []
-    assert loader.md_files == []
-    assert loader.txt_files == []
-    captured = capsys.readouterr()
-    assert "no .md/.txt/.py files found" in captured.err
+    with pytest.raises(LoadError):
+        loader = Loader(raw_path=str(FIXTURE_ROOT / "does_not_exist"))
+        assert loader.py_files == []
+        assert loader.md_files == []
+        assert loader.txt_files == []
 
 
 class TestLineOffsets:

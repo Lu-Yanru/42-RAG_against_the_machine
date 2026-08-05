@@ -4,6 +4,11 @@ import sys
 from tqdm import tqdm
 
 
+class LoadError(Exception):
+    """Error when loading the files."""
+    pass
+
+
 @dataclass
 class File:
     """Represents a file with a file path and its content."""
@@ -29,8 +34,8 @@ class Loader:
 
         total = len(self.md_files) + len(self.txt_files) + len(self.py_files)
         if total == 0:
-            print(f"Warning: no .md/.txt/.py files found under "
-                  f"'{self.raw_path}'.", file=sys.stderr)
+            raise LoadError(f"Warning: no .md/.txt/.py files found under "
+                            f"'{self.raw_path}'.")
 
     def load_files(self, files: list[Path], desc: str) -> list[File]:
         res = []
