@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import sys
+from typing import Callable
 
 from src.ingest.loader import File
 
@@ -26,17 +27,17 @@ class Chunker:
         if len(files) == 0:
             raise ChunkError("ChunkError: "
                              f"No {file_type} file to chunk.")
-        self.files = files
 
-        if max_chunk_size < 1:
-            raise ChunkError("ChunkError: "
-                             "max_chunk_size must be at least 1.")
+        self.files = files
         self.max_chunk_size = max_chunk_size
 
     def chunk_span(self, content: str, start: int = 0,
                    end: int | None = None,
                    overlap: int | None = None,
-                   file_path: str = "") -> list[tuple[int, int]]:
+                   file_path: str = "",
+                   paragraph_fn: Callable[[str, int, int | None],
+                                          list[tuple[int, int]]] | None = None
+                   ) -> list[tuple[int, int]]:
         """
         Chunk content[start:end] using paragraph -> line -> sliding-window
         cascading fallback.
@@ -47,9 +48,11 @@ class Chunker:
             end = len(content)
         if overlap is None:
             overlap = max(int(self.max_chunk_size * 0.1), 0)
+        if paragraph_fn is None:
+            paragraph_fn = self.paragraph_span
 
         res = []
-        paragraphs = Chunker.paragraph_span(content, start, end)
+        paragraphs = paragraph_fn(content, start, end)
         packed_paragraphs = self.greedy_pack(paragraphs)
 
         for p_start, p_end in packed_paragraphs:
@@ -96,10 +99,11 @@ class Chunker:
             if span_end - cur_start <= self.max_chunk_size:
                 cur_end = span_end
             else:
-                packed.append((cur_start, cur_end))
+                if cur_end is not None:
+                    packed.append((cur_start, cur_end))
                 cur_start, cur_end = span_start, span_end
 
-        if cur_start is not None:
+        if cur_start is not None and cur_end is not None:
             packed.append((cur_start, cur_end))
 
         return packed
@@ -120,7 +124,7 @@ class Chunker:
             # Add the start and end points to spans
             is_blank = content[line_start:line_end].strip() == ""
             if is_blank:
-                if para_start is not None:
+                if para_start is not None and para_end is not None:
                     spans.append((para_start, para_end))
                     para_start = None
                 continue
@@ -132,7 +136,7 @@ class Chunker:
             para_end = line_end
 
         # Add the last paragraph when no more lines
-        if para_start is not None:
+        if para_start is not None and para_end is not None:
             spans.append((para_start, para_end))
 
         return spans
@@ -176,38 +180,3 @@ class Chunker:
             pos += step
 
         return spans
-
-
-class TextChunker(Chunker):
-    def __init__(self, files: list[File],
-                 max_chunk_size: int = 2000,
-                 file_type: str = "txt") -> None:
-        super().__init__(files, max_chunk_size, file_type)
-
-    def chunk(self) -> list[Chunk]:
-        chunks = []
-        for file in self.files:
-            spans = self.chunk_span(file.content, file_path=file.file_path)
-
-            for start, end in spans:
-                chunks.append(Chunk(
-                    file_path=file.file_path,
-                    first_character_index=start,
-                    last_character_index=end,
-                    content=file.content[start:end],
-                ))
-        return chunks
-
-
-class MarkdownChunker(TextChunker):
-    def __init__(self, files: list[File],
-                 max_chunk_size: int = 2000,
-                 file_type: str = "md") -> None:
-        super().__init__(files, max_chunk_size, file_type)
-
-
-class PythonChunker(Chunker):
-    def __init__(self, files: list[File],
-                 max_chunk_size: int = 2000,
-                 file_type: str = "py") -> None:
-        super().__init__(files, max_chunk_size, file_type)

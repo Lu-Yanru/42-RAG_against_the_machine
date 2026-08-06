@@ -1,4 +1,5 @@
-from src.ingest.chunking import (Chunk, TextChunker)
+from src.ingest.chunking import Chunk
+from src.ingest.chunking_text import TextChunker
 from src.ingest.loader import File
 
 

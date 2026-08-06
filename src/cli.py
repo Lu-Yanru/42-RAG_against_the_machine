@@ -1,6 +1,7 @@
 import sys
 
-from src.ingest.chunking import ChunkError, TextChunker
+from src.ingest.chunking import ChunkError
+from src.ingest.chunking_text import TextChunker, MarkdownChunker
 from src.ingest.loader import Loader, LoadError
 
 
@@ -10,23 +11,44 @@ class CLI:
     @staticmethod
     def index(max_chunk_size: int = 2000) -> None:
         print(f"max_chunk_size: {max_chunk_size}")
+        if not isinstance(max_chunk_size, int):
+            print("Error: max_chunk_size must be an integer.", file=sys.stderr)
+            exit(1)
+        if max_chunk_size < 1 or max_chunk_size > 2000:
+            print("Error: "
+                  "max_chunk_size must be between 1 and 2000.", file=sys.stderr)
+            exit(1)
+
         try:
             loader = Loader()
-            print(loader.txt_files[0].file_path)
-            print(loader.txt_files[0].line_offsets[0])
+            print(loader.md_files[0].file_path)
         except LoadError as e:
             print(e, file=sys.stderr)
             exit(1)
 
+        text_chunks = None
+        md_chunks = None
+        py_chunks = None
+
         try:
             text_chunker = TextChunker(loader.txt_files, max_chunk_size, "txt")
             text_chunks = text_chunker.chunk()
-            print(text_chunks[0].content)
-            print(text_chunks[0].first_character_index)
-            print(text_chunks[0].last_character_index)
-            print("Ingestion complete! Indices saved under data/processed/")
         except ChunkError as e:
-            print(e, file=sys.stderr)
+            print(f"Text {e}", file=sys.stderr)
+
+        try:
+            md_chunker = MarkdownChunker(loader.md_files, max_chunk_size, "md")
+            md_chunks = md_chunker.chunk()
+        except ChunkError as e:
+            print(f"Markdown {e}", file=sys.stderr)
+
+        if text_chunks is None and md_chunks is None and py_chunks is None:
+            print("Fail to chunk files. Exiting...", file=sys.stderr)
+            exit(1)
+
+        print(f"text_chunks: {len(text_chunks)}")
+        print(f"md_chunks: {len(text_chunks)}")
+        print("Ingestion complete! Indices saved under data/processed/")
 
     @staticmethod
     def search(query: str, k: int = 5) -> None:
