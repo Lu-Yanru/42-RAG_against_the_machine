@@ -18,15 +18,23 @@ Describe your RAG pipeline components and how they
 interact
 
 ### Chunking strategy
-Split the files into chunks and store them as index that can be queried.
-
-Two distinct chunking strategies are implemented for the two types of files:
-- Python code chunking
-- Text chunking: Plain text files are first splitted into paragraphs (separated by an empty newline). If a paragraph is shorter than `max_chunk_size`, check if one can combine the next paragraph without exceeding `max_chunk_size` before starting a new chunk. If a paragraph is longer than `max_chunk_size`, split the paragraph by line and apply the same greedy packing. If a line is longer than `max_chunk_size`, fall back to a raw sliding window and log a warning suggesting the `max_chunk_size` might be too small. For Markdown files, split the file first by sections marked by `#` section headings and apply greedy packing. If a section is longer than `max_chunk_size`, chunk it further as plain text.
-
-Chunk size is configurable through a CLI argument (`--max_chunk_size`), with a default of 2000 characters.
+Files are split into chunks and stored as index that can be queried.
 
 The index is stored under `data/processed`.
+
+Max chunk size is configurable through a CLI argument (`--max_chunk_size`), with a default of 2000 characters.
+
+Two distinct chunking strategies are implemented for the two types of files:
+
+#### Text chunking
+Plain text files are first splitted into paragraphs (separated by an empty newline). If a paragraph is shorter than `max_chunk_size`, check if one can combine the next paragraph without exceeding `max_chunk_size` before starting a new chunk. If a paragraph is longer than `max_chunk_size`, split the paragraph by line and apply the same greedy packing. If a line is longer than `max_chunk_size`, fall back to a raw sliding window and log a warning suggesting the `max_chunk_size` might be too small. 
+
+For Markdown files, split the file first by sections marked by `#` section headings and apply greedy packing. If a section is longer than `max_chunk_size`, chunk it further as plain text.
+
+#### Python code chunking
+Python code is chunked based on the Abstract Syntax Tree (AST). Chunks are split at class `ClassDef` or function (`FunctionDef`/`AsyncFunctionDef`) level.
+
+If one of the class or function exceed `max_chunk_size`, then spilt it further as plain text. 
 
 ### Retrieval method: BM25
 Search the index and returns the top-k most relevant chunks to the prompt. Each result is a source location (a file path).
