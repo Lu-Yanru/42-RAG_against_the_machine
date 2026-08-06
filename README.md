@@ -36,7 +36,7 @@ Python code is chunked based on the Abstract Syntax Tree (AST). Chunks are split
 
 If one of the class or function exceed `max_chunk_size`, then spilt it further as plain text. 
 
-### Retrieval method: BM25
+### Retrieval method
 Search the index and returns the top-k most relevant chunks to the prompt. Each result is a source location (a file path).
 
 The result is stored as a JSON file under `data/output/search_results`.
@@ -56,8 +56,14 @@ file and overlaps its character range.
  
 
 ### Design decisions
-Explain key implementation choices
+
 #### BM25 vs. TF-IDF
+The **Best Match 25 (BM25)** algorithm is chosen over the **Term Frequency–Inverse Document Frequency (TF-IDF)** approach, because it is an improved version of TF-IDF.
+
+- It measures term frequency and document relevance more accurately.
+- It accounts for document length normalization, giving fair weight to all documents.
+- It helps to deliver more relevant search results based on keyword matching and context.
+
 
 ### Challenges faced
 Document difficulties encountered and solutions
@@ -184,3 +190,4 @@ The results are saved as JSON files in the following format:
 
 ## Resources
 - [Python Fire library documentation](https://github.com/google/python-fire)
+- [GeeksforGeeks What is BM25 algorithm?](https://www.geeksforgeeks.org/nlp/what-is-bm25-best-matching-25-algorithm/)

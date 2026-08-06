@@ -1,4 +1,5 @@
 import sys
+from timeit import default_timer as timer
 
 from src.ingest.chunking import ChunkError
 from src.ingest.chunking_text import TextChunker, MarkdownChunker
@@ -22,6 +23,7 @@ class CLI:
                   file=sys.stderr)
             exit(1)
 
+        start = timer()
         try:
             loader = Loader()
             print(loader.py_files[0].file_path)
@@ -63,6 +65,8 @@ class CLI:
         if py_chunks:
             print(f"py_chunks: {len(py_chunks)}")
         print("Ingestion complete! Indices saved under data/processed/")
+        end = timer()
+        print(f"processing time: {end - start:.2f}s")
 
     @staticmethod
     def search(query: str, k: int = 5) -> None:
