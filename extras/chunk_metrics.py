@@ -55,6 +55,8 @@ def chunk_metrics(max_chunk_size: int = 2000) -> None:
 
     if text_chunks:
         print(f"\nnum text_chunks: {len(text_chunks)}")
+        print(f"num text files: {len(loader.txt_files)}")
+        print(f"avg chunks per file: {len(text_chunks) / len(loader.txt_files)}")
         text_chunk_lens = get_all_chunk_len(text_chunks)
         print(f"min chunks size: {min(text_chunk_lens)}")
         print(f"max chunks size: {max(text_chunk_lens)}")
@@ -62,6 +64,8 @@ def chunk_metrics(max_chunk_size: int = 2000) -> None:
         print(f"median chunks size: {median(text_chunk_lens)}")
     if md_chunks:
         print(f"\nnum md_chunks: {len(md_chunks)}")
+        print(f"num md files: {len(loader.md_files)}")
+        print(f"avg chunks per file: {len(md_chunks) / len(loader.md_files)}")
         md_chunk_lens = get_all_chunk_len(md_chunks)
         print(f"min chunks size: {min(md_chunk_lens)}")
         print(f"max chunks size: {max(md_chunk_lens)}")
@@ -69,6 +73,8 @@ def chunk_metrics(max_chunk_size: int = 2000) -> None:
         print(f"median chunks size: {median(md_chunk_lens)}")
     if py_chunks:
         print(f"\nnum py_chunks: {len(py_chunks)}")
+        print(f"num py files: {len(loader.py_files)}")
+        print(f"avg chunks per file: {len(py_chunks) / len(loader.py_files)}")
         py_chunk_lens = get_all_chunk_len(py_chunks)
         print(f"min chunks size: {min(py_chunk_lens)}")
         print(f"max chunks size: {max(py_chunk_lens)}")

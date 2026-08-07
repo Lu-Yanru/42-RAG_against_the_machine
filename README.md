@@ -37,9 +37,9 @@ Python code is chunked based on the Abstract Syntax Tree (AST). Chunks are split
 If one of the class or function exceed `max_chunk_size`, then spilt it further as plain text. 
 
 ### Retrieval method
-Search the index and returns the top-k most relevant chunks to the prompt. Each result is a source location (a file path).
+The **Best Match 25 (BM25)** algorithm is used to search the index and returns the top-k most relevant chunks to the prompt. Each result is a source location (a file path). The result is stored as a JSON file under `data/output/search_results`.
 
-The result is stored as a JSON file under `data/output/search_results`.
+BM25 is a statistical ranking function based on term frequency (TF) and inverse document frequency (IDF).
 
 ### Performance analysis
 The retrieval quality is measured with the **recall@k** metric.
@@ -49,7 +49,7 @@ file and overlaps its character range.
 
 |Metric | Target | Status |
 |-------|--------|--------|
-|Indexing time | <= 5 min |✅ |
+|Indexing time | <= 5 min |✅ < 1 min|
 |Retrieval throughput| <= 90s for 200 questions | ✅ |
 |Recall@5 for docs | >= 80% | ✅ |
 |Recall@5 for code | >= 50% | ✅ |
@@ -58,7 +58,7 @@ file and overlaps its character range.
 ### Design decisions
 
 #### BM25 vs. TF-IDF
-The **Best Match 25 (BM25)** algorithm is chosen over the **Term Frequency–Inverse Document Frequency (TF-IDF)** approach, because it is an improved version of TF-IDF.
+The **BM25** algorithm is chosen over the **Term Frequency–Inverse Document Frequency (TF-IDF)** approach, because it is an improved version of TF-IDF.
 
 - It measures term frequency and document relevance more accurately.
 - It accounts for document length normalization, giving fair weight to all documents.
