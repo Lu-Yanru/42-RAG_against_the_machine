@@ -33,7 +33,7 @@ dev = [
 ]
 
 [[tool.mypy.overrides]]
-module = ["fire", "tqdm"]
+module = ["bm25s", "bm25s.tokenization", "fire", "tqdm"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

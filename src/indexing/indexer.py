@@ -75,7 +75,8 @@ class Indexer:
         ) for c in self.chunks]
 
         self.tokenizer = build_tokenizer()
-        self.corpus_tokenized = self.tokenizer.tokenize(self.texts, return_as="tuple")
+        self.corpus_tokenized = self.tokenizer.tokenize(self.texts,
+                                                        return_as="tuple")
         self.retriever = bm25s.BM25()
         self.retriever.index(self.corpus_tokenized)
 
@@ -88,7 +89,7 @@ class Indexer:
                 json.dump([m.model_dump() for m in self.metadata], f, indent=4)
         except (json.JSONDecodeError, OSError) as e:
             print(f"Error: Failed to save indexes: {e} Exiting...",
-                  file = sys.stderr)
+                  file=sys.stderr)
             exit(1)
 
     def load(self) -> None:
@@ -103,16 +104,19 @@ class Indexer:
 
         try:
             self.retriever = bm25s.BM25.load(str(self.save_dir),
-                                            load_corpus=False, load_vocab=True)
+                                             load_corpus=False,
+                                             load_vocab=True)
             self.tokenizer = build_tokenizer()
             self.tokenizer.load_vocab(str(self.save_dir))
 
             with open(self.save_path, "r", encoding="utf-8") as f:
                 raw = json.load(f)
-            self.metadata = [MinimalSource.model_validate(m) for m in raw]
-        except FileNotFoundError as e:
+            self.metadata = [MinimalSource.model_validate(m)
+                             for m in raw]
+        except FileNotFoundError:
             raise IndexingError(
                 "IndexingError: No persisted index found under "
-                f"'{self.save_dir}'. Run the 'index' command first.") from e
+                f"'{self.save_dir}'. Run the 'index' command first.")
         except (json.JSONDecodeError, OSError) as e:
-            raise IndexingError(f"IndexingError: Failed to load persisted index: {e}") from e
+            raise IndexingError("IndexingError: Failed to load "
+                                f"persisted index: {e}")

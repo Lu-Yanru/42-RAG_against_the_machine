@@ -45,7 +45,7 @@ BM25 is a statistical ranking function based on term frequency (TF) and inverse 
 The retrieval quality is measured with the **recall@k** metric.
 For each question, recall@k is the share of its correct sources that you retrieve in your
 top-k results. A correct source counts as found when one of your results is in the same
-file and overlaps its character range.
+file and overlaps its character range (IoU >= 0.05).
 
 |Metric | Target | Status |
 |-------|--------|--------|

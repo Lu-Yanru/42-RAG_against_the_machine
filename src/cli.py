@@ -1,7 +1,8 @@
 import sys
 from timeit import default_timer as timer
 
-from src.indexing.indexer import Indexer, IndexingError
+from src.indexing.indexer import Indexer
+from src.retrieval.retriever import Retriever
 
 
 INDEX_DIR = "data/processed"
@@ -29,7 +30,7 @@ class CLI:
 
         start = timer()
         indexer = Indexer(INDEX_DIR)
-        indexer.build(max_chunk_size)
+        indexer.build(max_chunk_size=max_chunk_size)
         indexer.save()
         print(f"Ingestion complete! Indices saved under {INDEX_DIR}")
         end = timer()
@@ -37,17 +38,21 @@ class CLI:
 
     @staticmethod
     def search(query: str, k: int = 5) -> None:
-        indexer = Indexer()
-        try:
-            indexer.load()
-        except IndexingError as e:
-            print(e)
+        if not isinstance(k, int):
+            print("Error: k must be an integer.",
+                  file=sys.stderr)
             exit(1)
-        print("Load successful.")
-        print(indexer.metadata[0].file_path)
-        print(f"query: {query}")
-        print(f"k: {k}")
-        print("Search result...")
+        if k < 1:
+            print("Error: "
+                  "k must be at least 1.",
+                  file=sys.stderr)
+            exit(1)
+
+        retriever = Retriever([query], k)
+        results = retriever.retrieve()[0]
+        for res in results:
+            print(res.file_path + " [" + str(res.first_character_index)
+                  + ":" + str(res.last_character_index) + "]")
 
     @staticmethod
     def search_dataset(dataset_path: str = DATASET_PATH,
@@ -71,7 +76,8 @@ class CLI:
 
     @staticmethod
     def evaluate(student_search_results_path: str = SEARCH_RESULTS_PATH,
-                 dataset_path: str = DATASET_PATH) -> None:
+                 dataset_path: str = DATASET_PATH,
+                 k: int = 5) -> None:
         print("Evaluating...")
         print(f"student_search_results_path: {student_search_results_path}")
         print(f"dataset_path {dataset_path}")
