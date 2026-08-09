@@ -50,9 +50,9 @@ file and overlaps its character range (IoU >= 0.05).
 |Metric | Target | Status |
 |-------|--------|--------|
 |Indexing time | <= 5 min |✅ < 1 min|
-|Retrieval throughput| <= 90s for 200 questions | ✅ |
-|Recall@5 for docs | >= 80% | ✅ |
-|Recall@5 for code | >= 50% | ✅ |
+|Retrieval throughput| <= 90s for 200 questions | ✅ < 1s|
+|Recall@5 for docs | >= 80% | ✅ 84.0%|
+|Recall@5 for code | >= 50% | ✅ 50.5%|
  
 
 ### Design decisions
@@ -191,3 +191,6 @@ The results are saved as JSON files in the following format:
 ## Resources
 - [Python Fire library documentation](https://github.com/google/python-fire)
 - [GeeksforGeeks What is BM25 algorithm?](https://www.geeksforgeeks.org/nlp/what-is-bm25-best-matching-25-algorithm/)
+- [Intersection over union (IoU) calculation for evaluating an image segmentation model](https://medium.com/data-science/intersection-over-union-iou-calculation-for-evaluating-an-image-segmentation-model-8b22e2e84686)
+
+AI is used to help create tests and debug the code, explain RAG concepts in simple language with examples and explain documentations of the `bm25s` library. 

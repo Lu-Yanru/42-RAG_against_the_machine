@@ -5,7 +5,7 @@ all: install run
 install:
 	uv sync
 
-run: index search_dataset answer_dataset evaluate
+run: index search_dataset answer_dataset
 
 help:
 	uv run python -m src -h
