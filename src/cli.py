@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from pydantic import ValidationError
 import sys
 from timeit import default_timer as timer
 
@@ -12,13 +13,11 @@ from src.retrieval.retriever import Retriever
 
 INDEX_DIR = "data/processed"
 DATASET_PATH = "data/datasets/UnansweredQuestions/dataset_docs_public.json"
-SEARCH_RESULTS_SAVE_DIR = "data/output/search_results/UnansweredQuestions"
-SEARCH_RESULTS_PATH = ("data/output/search_results/UnansweredQuestions/"
-                       "dataset_docs_public.json")
-ANSWER_SAVE_DIR = "data/output/search_results_and_answer/UnansweredQuestions"
+SEARCH_RESULTS_SAVE_DIR = "data/output/search_results"
+SEARCH_RESULTS_PATH = ("data/output/search_results/dataset_docs_public.json")
+ANSWER_SAVE_DIR = "data/output/search_results_and_answer"
 GROUND_TRUTH_PATH = "data/datasets/AnsweredQuestions/dataset_docs_public.json"
-EVAL_PATH = ("data/output/search_results/AnsweredQuestions/"
-             "dataset_docs_public.json")
+
 
 class CLI:
     """Handles the CLI."""
@@ -104,8 +103,10 @@ class CLI:
         save_search_result(student_results, dataset_path, save_directory)
         end = timer()
         processing_time = end - start
-        print(f"Processed {question_num} questions in {processing_time:.2f}s. "
-              f"Retireval throughput: {question_num/200 * processing_time:.2f}s"
+        print(f"Processed {question_num} questions in "
+              f"{processing_time:.2f}s. "
+              "Retireval throughput: "
+              f"{question_num/200 * processing_time:.2f}s"
               "/200 questions")
 
     @staticmethod
@@ -126,17 +127,17 @@ class CLI:
         print(f"Saved student_search_results_and_answer to {save_directory}")
 
     @staticmethod
-    def evaluate(student_search_results_path: str = EVAL_PATH,
+    def evaluate(student_search_results_path: str = SEARCH_RESULTS_PATH,
                  dataset_path: str = GROUND_TRUTH_PATH) -> None:
         """
         Evaluate search quality using recall@k
         against the ground-truth dataset.
         """
-        print(f"Evaluating {student_search_results_path} "
-              f"against {dataset_path}...")
+        print(f"Evaluating '{student_search_results_path}' "
+              f"against '{dataset_path}'...")
         evaluator = Evaluator(student_search_results_path, dataset_path)
         print(f"Recall@{evaluator.k}: {evaluator.mean_recall:.2f} "
-            f"for {len(evaluator.matched_res)} questions.")
+              f"for {len(evaluator.matched_res)} questions.")
 
 
 def load_dataset_unanswered(dataset_path: str = DATASET_PATH) \
@@ -145,16 +146,21 @@ def load_dataset_unanswered(dataset_path: str = DATASET_PATH) \
     try:
         with open(dataset_path, "r", encoding="utf-8") as f:
             raw = json.load(f)
-    except (json.JSONDecodeError, OSError) as e:
-        print(f"Error loading dataset: {e} "
+    except (json.JSONDecodeError, OSError):
+        print(f"Error loading dataset '{dataset_path}'. "
               "Exiting...",
               file=sys.stderr)
         exit(1)
 
-    queries = [UnansweredQuestion.model_validate(q)
-               for q in raw["rag_questions"]]
-
-    return queries
+    try:
+        queries = [UnansweredQuestion.model_validate(q)
+                   for q in raw["rag_questions"]]
+        return queries
+    except (ValidationError, KeyError, TypeError):
+        print(f"Error loading dataset '{dataset_path}'. "
+              "Exiting...",
+              file=sys.stderr)
+        exit(1)
 
 
 def save_search_result(res: StudentSearchResults,

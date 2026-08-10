@@ -1,5 +1,7 @@
 import json
+from pydantic import ValidationError
 import sys
+from tqdm import tqdm
 
 from src.models import AnsweredQuestion, MinimalSource, StudentSearchResults
 
@@ -21,8 +23,9 @@ class Evaluator:
 
         self.matched_res = self.match_questions()
         self.recall_per_question = []
-        for predicted, gt in self.matched_res.values():
-            self.recall_per_question.append(Evaluator.recall_at_k(predicted, gt))
+        for predicted, gt in tqdm(self.matched_res.values()):
+            self.recall_per_question.append(
+                Evaluator.recall_at_k(predicted, gt))
         self.mean_recall = Evaluator.mean_recall_at_k(self.recall_per_question)
 
     def match_questions(self) -> dict[str, tuple[list[MinimalSource],
@@ -33,7 +36,7 @@ class Evaluator:
         ground_truth_sources).
         """
         matched_res: dict[str, tuple[list[MinimalSource],
-                       list[MinimalSource]]] = {}
+                                     list[MinimalSource]]] = {}
         for gt in self.ground_truth:
             for res in self.min_search_res:
                 if gt.question_id == res.question_id:
@@ -67,33 +70,44 @@ class Evaluator:
         try:
             with open(dataset_path, "r", encoding="utf-8") as f:
                 raw = json.load(f)
-        except (json.JSONDecodeError, OSError) as e:
-            print(f"Error loading dataset '{dataset_path}': "
-                  f"{e} Exiting...",
+        except (json.JSONDecodeError, OSError):
+            print(f"Error loading dataset '{dataset_path}'. "
+                  "Exiting...",
                   file=sys.stderr)
             exit(1)
 
-        queries = [AnsweredQuestion.model_validate(q)
-                for q in raw["rag_questions"]]
-
-        return queries
+        try:
+            queries = [AnsweredQuestion.model_validate(q)
+                       for q in raw["rag_questions"]]
+            return queries
+        except (ValidationError, KeyError, TypeError):
+            print(f"Error loading dataset '{dataset_path}'. "
+                  "Exiting...",
+                  file=sys.stderr)
+            exit(1)
 
     @staticmethod
     def load_search_results(dataset_path: str) \
-        -> StudentSearchResults:
+            -> StudentSearchResults:
         try:
             with open(dataset_path, "r", encoding="utf-8") as f:
                 raw = json.load(f)
-        except (json.JSONDecodeError, OSError) as e:
-            print(f"Error loading dataset '{dataset_path}': "
-                  f"{e} Exiting...",
+        except (json.JSONDecodeError, OSError):
+            print(f"Error loading dataset '{dataset_path}'. "
+                  "Exiting...",
                   file=sys.stderr)
             exit(1)
 
-        return StudentSearchResults(
-            search_results=raw["search_results"],
-            k=raw["k"]
-        )
+        try:
+            return StudentSearchResults(
+                search_results=raw["search_results"],
+                k=raw["k"]
+            )
+        except (ValidationError, KeyError, TypeError):
+            print(f"Error loading dataset '{dataset_path}'. "
+                  "Exiting...",
+                  file=sys.stderr)
+            exit(1)
 
     @staticmethod
     def recall_at_k(predicted: list[MinimalSource],
