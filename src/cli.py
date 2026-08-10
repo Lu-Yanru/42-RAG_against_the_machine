@@ -1,22 +1,15 @@
-import json
-from pathlib import Path
-from pydantic import ValidationError
 import sys
 from timeit import default_timer as timer
 
+from src.config import (INDEX_DIR, DATASET_PATH, SEARCH_RESULTS_PATH,
+                        SEARCH_RESULTS_SAVE_DIR, ANSWER_SAVE_DIR,
+                        GROUND_TRUTH_PATH)
 from src.evaluation.evaluator import Evaluator
 from src.indexing.indexer import Indexer
 from src.models import (MinimalSearchResults,
-                        StudentSearchResults, UnansweredQuestion)
+                        StudentSearchResults)
 from src.retrieval.retriever import Retriever
-
-
-INDEX_DIR = "data/processed"
-DATASET_PATH = "data/datasets/UnansweredQuestions/dataset_docs_public.json"
-SEARCH_RESULTS_SAVE_DIR = "data/output/search_results"
-SEARCH_RESULTS_PATH = ("data/output/search_results/dataset_docs_public.json")
-ANSWER_SAVE_DIR = "data/output/search_results_and_answer"
-GROUND_TRUTH_PATH = "data/datasets/AnsweredQuestions/dataset_docs_public.json"
+from src.utils.json_io import load_dataset_unanswered, save_search_result
 
 
 class CLI:
@@ -138,45 +131,3 @@ class CLI:
         evaluator = Evaluator(student_search_results_path, dataset_path)
         print(f"Recall@{evaluator.k}: {evaluator.mean_recall:.2f} "
               f"for {len(evaluator.matched_res)} questions.")
-
-
-def load_dataset_unanswered(dataset_path: str = DATASET_PATH) \
-        -> list[UnansweredQuestion]:
-    """Load unanswered questions."""
-    try:
-        with open(dataset_path, "r", encoding="utf-8") as f:
-            raw = json.load(f)
-    except (json.JSONDecodeError, OSError):
-        print(f"Error loading dataset '{dataset_path}'. "
-              "Exiting...",
-              file=sys.stderr)
-        exit(1)
-
-    try:
-        queries = [UnansweredQuestion.model_validate(q)
-                   for q in raw["rag_questions"]]
-        return queries
-    except (ValidationError, KeyError, TypeError):
-        print(f"Error loading dataset '{dataset_path}'. "
-              "Exiting...",
-              file=sys.stderr)
-        exit(1)
-
-
-def save_search_result(res: StudentSearchResults,
-                       dataset_path: str = DATASET_PATH,
-                       save_dir: str = SEARCH_RESULTS_SAVE_DIR) -> None:
-    """Save search results to a json file."""
-    out_dir = Path(save_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / Path(dataset_path).name
-
-    try:
-        with open(out_path, "w", encoding="utf-8") as f:
-            json.dump(res.model_dump(), f, indent=4)
-        print(f"Saved student_search_results to {out_path}")
-    except (json.JSONDecodeError, OSError) as e:
-        print(f"Error: Failed to save search results: {e} "
-              "Exiting...",
-              file=sys.stderr)
-        exit(1)

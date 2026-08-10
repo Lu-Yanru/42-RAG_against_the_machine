@@ -5,7 +5,7 @@ all: install run
 install:
 	uv sync
 
-run: index search_dataset answer_dataset evaluate
+run: index search_dataset_docs evaluate_docs answer_dataset_docs
 
 help:
 	uv run python -m src -h
@@ -44,7 +44,7 @@ index:
 search:
 	uv run python -m src search $(QUERY)
 
-search_dataset_doc:
+search_dataset_docs:
 	uv run python -m src search_dataset
 
 search_dataset_code:
@@ -70,14 +70,14 @@ evaluate_code:
 		--dataset_path "data/datasets/AnsweredQuestions/dataset_code_public.json"
 
 # moulinette
-moulinette-docs:
+moulinette_docs:
 	uv run python -m src search_dataset --k 10
 	./moulinette/moulinette-ubuntu evaluate_student_search_results \
 		"data/output/search_results/dataset_docs_public.json" \
 		"data/datasets/AnsweredQuestions/dataset_docs_public.json" \
 		--k 10 --max_context_length 2000
 
-moulinette-code:
+moulinette_code:
 	uv run python -m src search_dataset --dataset_path \
 		"data/datasets/UnansweredQuestions/dataset_code_public.json" \
 		--k 10 \

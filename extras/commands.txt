@@ -1,0 +1,16 @@
+index
+uv run python -m src index --max_chunk_size 2000
+
+search
+uv run python -m src search "How to configure the OpenAI server?" --k 10
+
+search_dataset
+uv run python -m src search_dataset --k 10 --dataset_path "data/datasets/UnansweredQuestions/dataset_code_public.json" --save_directory "data/output/search_results"
+
+answer
+uv run python -m src answer "How to configure the OpenAI server?" --k 10
+
+answer_dataset
+
+evaluate
+uv run python -m src evaluate --student_search_results_path "data/output/search_results/dataset_code_public.json" --dataset_path "data/datasets/AnsweredQuestions/dataset_code_public.json"

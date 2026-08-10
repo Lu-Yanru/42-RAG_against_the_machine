@@ -192,5 +192,6 @@ The results are saved as JSON files in the following format:
 - [Python Fire library documentation](https://github.com/google/python-fire)
 - [GeeksforGeeks What is BM25 algorithm?](https://www.geeksforgeeks.org/nlp/what-is-bm25-best-matching-25-algorithm/)
 - [Intersection over union (IoU) calculation for evaluating an image segmentation model](https://medium.com/data-science/intersection-over-union-iou-calculation-for-evaluating-an-image-segmentation-model-8b22e2e84686)
+- [Evaluation Metrics for Search and Recommendation Systems](https://weaviate.io/blog/retrieval-evaluation-metrics)
 
 AI is used to help create tests and debug the code, explain RAG concepts in simple language with examples and explain documentations of the `bm25s` library. 
