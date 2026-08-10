@@ -7,7 +7,7 @@ from src.config import (DATASET_PATH, SEARCH_RESULTS_PATH,
                         SEARCH_RESULTS_SAVE_DIR,
                         GROUND_TRUTH_PATH)
 from src.models import (AnsweredQuestion, UnansweredQuestion,
-                        StudentSearchResults)
+                        StudentSearchResults, StudentSearchResultsAndAnswer)
 
 
 def load_dataset_unanswered(dataset_path: str = DATASET_PATH) \
@@ -56,7 +56,8 @@ def load_dataset_answered(dataset_path: str = GROUND_TRUTH_PATH) \
         exit(1)
 
 
-def save_search_result(res: StudentSearchResults,
+def save_search_result(res: StudentSearchResults |
+                       StudentSearchResultsAndAnswer,
                        dataset_path: str = DATASET_PATH,
                        save_dir: str = SEARCH_RESULTS_SAVE_DIR) -> None:
     """Save search results to a json file."""

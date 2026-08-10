@@ -50,7 +50,7 @@ file and overlaps its character range (IoU >= 0.05).
 |Metric | Target | Status |
 |-------|--------|--------|
 |Indexing time | <= 5 min |✅ < 1 min|
-|Retrieval throughput| <= 90s for 200 questions | ✅ < 1s|
+|Retrieval throughput| <= 90s for 200 questions | ✅ < 2s|
 |Recall@5 for docs | >= 80% | ✅ 84.0%|
 |Recall@5 for code | >= 50% | ✅ 50.5%|
  

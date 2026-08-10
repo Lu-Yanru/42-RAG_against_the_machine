@@ -21,7 +21,8 @@ class Evaluator:
 
         self.matched_res = self.match_questions()
         self.recall_per_question = []
-        for predicted, gt in tqdm(self.matched_res.values()):
+        for predicted, gt in tqdm(self.matched_res.values(),
+                                  desc="Calculating recall"):
             self.recall_per_question.append(
                 Evaluator.recall_at_k(predicted, gt))
         self.mean_recall = Evaluator.mean_recall_at_k(self.recall_per_question)
