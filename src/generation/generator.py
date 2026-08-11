@@ -48,7 +48,7 @@ class Generator:
         self._tokenizer: Any = None
         self._model: Any = None
 
-        # Auto-select device with prority mps > cuba > cpu
+        # Auto-select device with prority mps > cuda > cpu
         if device is None:
             if torch.backends.mps.is_available():
                 device = "mps"
@@ -59,7 +59,7 @@ class Generator:
         self._device = device
 
         if dtype is None:
-            dtype = torch.float16 if self._device in ["cuba", "mps"] \
+            dtype = torch.float16 if self._device in ["cuda", "mps"] \
                 else torch.float32
         self._dtype = dtype
 
