@@ -41,3 +41,6 @@ testpaths = ["tests"]
 python_files = ["test*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+markers = [
+    "slow: marks tests that load real model weights (deselect with '-m \"not slow\"')",
+]

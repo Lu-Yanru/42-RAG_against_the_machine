@@ -63,14 +63,6 @@ class TestDeviceAndDtypeSelection:
         generator = Generator()
         assert generator._device == "cuda"
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="Generator.__init__ checks `self._device in [\"cuba\", \"mps\"]` "
-               "-- 'cuba' is a typo for 'cuda', so CUDA silently gets float32 "
-               "instead of the float16 the class docstring promises. This "
-               "documents the intended spec; it should start passing (and "
-               "then have xfail removed) once the typo is fixed, not before.",
-    )
     def test_cuda_uses_float16(self, monkeypatch, mocked_hf):
         monkeypatch.setattr(torch.backends.mps, "is_available", lambda: False)
         monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
