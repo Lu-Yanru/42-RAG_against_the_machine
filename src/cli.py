@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 import os
 import sys
 from timeit import default_timer as timer
+import torch
 from tqdm import tqdm
 
 from src.config import (INDEX_DIR, DATASET_PATH, SEARCH_RESULTS_PATH,
@@ -46,6 +47,10 @@ class CLI:
     def search(query: str, k: int = 5) -> None:
         """Search sources for a single query."""
         if not check_k_validity(k):
+            exit(1)
+        if not isinstance(query, str):
+            print("Error: Query must be a valid string.",
+                  file=sys.stderr)
             exit(1)
 
         retriever = Retriever([query], k)
@@ -98,6 +103,10 @@ class CLI:
         """Answer a single query using the retrieved context."""
         if not check_k_validity(k):
             exit(1)
+        if not isinstance(query, str):
+            print("Error: Query must be a valid string.",
+                  file=sys.stderr)
+            exit(1)
 
         # Load HF token
         if os.path.exists(".env"):
@@ -107,9 +116,9 @@ class CLI:
         retriever = Retriever([query], k)
         sources = retriever.retrieve()[0]
         generator = Generator()
-        print(generator.generate_answer(query, sources))
+        print("\nAnswer:\n", generator.generate_answer(query, sources))
         end = timer()
-        print(f"Answer generation time: {end - start:.2f}s.")
+        print(f"\nAnswer generation time: {end - start:.2f}s.")
 
     @staticmethod
     def answer_dataset(student_search_results_path: str = SEARCH_RESULTS_PATH,
@@ -122,13 +131,13 @@ class CLI:
         if os.path.exists(".env"):
             load_dotenv()
 
-        start = timer()
         search_res = load_search_results(student_search_results_path)
         generator = Generator()
         answers: list[MinimalAnswer] = []
 
         for res in tqdm(search_res.search_results, desc="Generating answers"):
             try:
+                torch.cuda.empty_cache()
                 answer = generator.generate_answer(res.question,
                                                    res.retrieved_sources)
             except RuntimeError as e:
@@ -148,8 +157,6 @@ class CLI:
         )
 
         save_search_result(out, student_search_results_path, save_directory)
-        end = timer()
-        print(f"Answer generation time: {end - start:.2f}s.")
 
     @staticmethod
     def evaluate(student_search_results_path: str = SEARCH_RESULTS_PATH,

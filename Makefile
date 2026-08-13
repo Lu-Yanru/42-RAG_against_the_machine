@@ -59,7 +59,9 @@ answer_dataset_docs:
 	uv run python -m src answer_dataset
 
 answer_dataset_code:
-	uv run python -m src answer_dataset
+	uv run python -m src answer_dataset \
+		--student_search_results_path "data/output/search_results/dataset_code_public.json" \
+		--save_directory "data/output/search_results_and_answer"
 
 evaluate_docs:
 	uv run python -m src evaluate
