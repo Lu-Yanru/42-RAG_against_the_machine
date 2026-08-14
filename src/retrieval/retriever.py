@@ -9,7 +9,7 @@ class Retriever:
         self.indexer = Indexer()
         try:
             self.indexer.load()
-            print("Successfully loaded indexes.")
+            print("Successfully loaded lexical indexes.")
         except IndexingError as e:
             print(e, file=sys.stderr)
             exit(1)
@@ -41,10 +41,8 @@ class Retriever:
 
         # bm25s pads an all-stopword/out-of-vocabulary/empty query down to
         # a single id 0 (the reserved "" vocab entry) instead of an empty
-        # token list. Left unchecked, retrieve() still runs on that query
-        # and returns arbitrary documents with score 0.0 for every one of
-        # them -- not the [] the CLI's edge-case handling requires. Detect
-        # that degenerate case explicitly per query.
+        # token list.
+        # Detect that degenerate case explicitly per query.
         is_degenerate = [all(token_id == 0 for token_id in ids)
                          for ids in tokenized.ids]
 

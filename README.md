@@ -64,20 +64,20 @@ file and overlaps its character range (IoU >= 0.05).
 |Recall@5 for code | >= 50% | ✅ 50.5%|
  
 #### Semantic retrieval
-|Metric | Target | Status |
-|-------|--------|--------|
-|Indexing time | <= 5 min |✅ < 2 min|
-|Retrieval throughput| <= 90s for 200 questions | ✅ < 2s|
-|Recall@5 for docs | >= 80% | ✅ 84.0%|
-|Recall@5 for code | >= 50% | ✅ 50.5%|
+|Metric | Status |
+|-------|--------|
+|Indexing time | < 2 min|
+|Retrieval throughput| < 8s|
+|Recall@5 for docs | 56.0%|
+|Recall@5 for code | 35.4%|
 
 #### Hybrid retrieval
-|Metric | Target | Status |
-|-------|--------|--------|
-|Indexing time | <= 5 min |✅ < 2 min|
-|Retrieval throughput| <= 90s for 200 questions | ✅ < 2s|
-|Recall@5 for docs | >= 80% | ✅ 84.0%|
-|Recall@5 for code | >= 50% | ✅ 50.5%|
+|Metric | Status |
+|-------|--------|
+|Indexing time | < 2 min|
+|Retrieval throughput| < 8s|
+|Recall@5 for docs | 81.0%|
+|Recall@5 for code | 51.5%|
 
 
 ### Design decisions
@@ -118,11 +118,15 @@ This project uses `uv` for dependency management and a `Makefile` to automate co
 |Commands|Description|Flags| Flag description|Flag default value|Flag valid range|
 |--------|-----------|-----|-----------------|------------------|----------------|
 |index| Index the codebase|--max_chunk_size|Maximum size of chunking|2000|100-2000|
+|||--method| The method of indexing| lexical| lexical, semantic, hybrid|
 |search| Search for relevant chunks for a single prompt|--k|The top-k most relevant sources to retrieve.|--|positive integer|
+|||--method| | | |
 |search_dataset| Search for relevant chunks for a whole dataset|--dataset_path | The path of the dataset|data/datasets/UnansweredQuestions/dataset_docs_public.json|Valid JSON file|
 |||--k||||
 |||--save_directory|The path to save the search result|data/output/search_results/UnansweredQuestions|--|
+|||--method| | | |
 |answer| Anwer a single prompt prompt based on retrieved chunks|--k||||
+|||--method| | | |
 |answer_dataset| Generate anwers for a whole dataset|--student_search_results_path|The path where the search results are stored|data/output/search_results|--|
 |||--save_directory|The path to save the answers|data/output/seach_results_and_answer|--|
 |evaluate| Evaluate the retrival quality based on recall@k metrics|--student_search_results_path||||

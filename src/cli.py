@@ -1,5 +1,3 @@
-from dotenv import load_dotenv
-import os
 import sys
 from timeit import default_timer as timer
 import torch
@@ -41,10 +39,6 @@ class CLI:
             exit(1)
         if not check_method_validity(method):
             exit(1)
-
-        # Load HF token
-        if os.path.exists(".env"):
-            load_dotenv()
 
         start = timer()
         indexer = Indexer(INDEX_DIR)
@@ -147,10 +141,6 @@ class CLI:
         if not check_method_validity(method):
             exit(1)
 
-        # Load HF token
-        if os.path.exists(".env"):
-            load_dotenv()
-
         start = timer()
         retriever = make_retriever([query], k, method)
         sources = retriever.retrieve()[0]
@@ -170,10 +160,6 @@ class CLI:
         Answer a whole dataset using the sources found.
         Save the results under save_directory.
         """
-        # Load HF token
-        if os.path.exists(".env"):
-            load_dotenv()
-
         search_res = load_search_results(student_search_results_path)
         generator = Generator()
         answers: list[MinimalAnswer] = []

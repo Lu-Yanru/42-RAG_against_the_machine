@@ -22,8 +22,39 @@ uv run python -m src evaluate \
     --student_search_results_path "data/output/search_results/dataset_code_public.json" \
     --dataset_path "data/datasets/AnsweredQuestions/dataset_code_public.json"
 
+
+
 check gpu usage
 nvidia-smi -l 1
 
 check what gpu
 lshw -C display
+
+
+bonus
+semantic index
+uv run index --max_chunk_size 1500 --method "sematic"
+
+hybrid index
+uv run index --max_chunk_size 1500 --method "hybrid"
+
+search
+uv run python -m src search "How to configure the OpenAI server?" --k 10 --method semantic
+
+uv run python -m src search "How to configure the OpenAI server?" --k 10 --method hybrid
+
+search_dataset
+uv run python -m src search_dataset --k 10 \
+    --dataset_path "data/datasets/UnansweredQuestions/dataset_code_public.json" \
+    --save_directory "data/output/search_results" \
+    --method semantic
+
+uv run python -m src search_dataset --k 10 \
+    --dataset_path "data/datasets/UnansweredQuestions/dataset_code_public.json" \
+    --save_directory "data/output/search_results" \
+    --method hybrid
+
+answer
+uv run python -m src answer "How to configure the OpenAI server?" --k 10 --method semantic
+
+uv run python -m src answer "How to configure the OpenAI server?" --k 10 --method hybrid
