@@ -6,7 +6,8 @@ FIXTURE_ROOT = "tests/fixtures/mini_repo"
 
 def _built_retriever(queries: list[str], k: int, max_chunk_size: int = 2000) -> Retriever:
     indexer = Indexer(save_dir="unused")
-    indexer.build(raw_data=FIXTURE_ROOT, max_chunk_size=max_chunk_size)
+    indexer.load_chunks(raw_data=FIXTURE_ROOT, max_chunk_size=max_chunk_size)
+    indexer.build()
     return Retriever(queries, k)
 
 

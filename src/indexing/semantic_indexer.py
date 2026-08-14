@@ -4,9 +4,8 @@
 import json
 import numpy as np
 from pathlib import Path
-import sys
 
-from src.config import SEMANTIC_INDEX_DIR, MAX_CHUNK_SIZE
+from src.config import SEMANTIC_INDEX_DIR
 from src.indexing.indexer import Indexer
 from src.indexing.semantic_encoder import SemanticEncoder
 from src.models import MinimalSource

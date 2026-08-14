@@ -97,7 +97,36 @@ index_semantic:
 index_hybrid:
 	uv run python -m src index --method "hybrid"
 
+search_semantic:
+	uv run python -m src search $(QUERY) --method semantic
+
+search_hybrid:
+	uv run python -m src search $(QUERY) --method hybrid
+
+search_dataset_docs_semantic:
+	uv run python -m src search_dataset --method semantic
+
+search_dataset_docs_hybrid:
+	uv run python -m src search_dataset --method hybrid
+
+search_dataset_code_semantic:
+	uv run python -m src search_dataset --k 5 --method semantic \
+		--dataset_path "data/datasets/UnansweredQuestions/dataset_code_public.json" \
+		--save_directory "data/output/search_results"
+
+search_dataset_code_hybrid:
+	uv run python -m src search_dataset --k 5 --method hybrid \
+		--dataset_path "data/datasets/UnansweredQuestions/dataset_code_public.json" \
+		--save_directory "data/output/search_results"
+
+answer_semantic:
+	uv run python -m src answer $(QUERY) --k 5 --method semantic
+
+answer_hybrid:
+	uv run python -m src answer $(QUERY) --k 5 --method hybrid
+
 
 .PHONY: all install run help debug clean fclean lint lint-strict re \
 		index search search_dataset answer answer_dataset evaluate \
-		moulinette-docs moulinette-code index_semantic index_hybrid
+		moulinette-docs moulinette-code index_semantic index_hybrid \
+		search_semantic search_hybrid

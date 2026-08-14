@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 import re
 import sys
@@ -79,10 +78,6 @@ class Generator:
         # Set model in eval mode (as opposed to training mode)
         if self._model is not None:
             self._model.eval()
-
-        cpu_num = os.cpu_count()
-        if cpu_num is not None:
-            torch.set_num_interop_threads(cpu_num)
 
     def generate_answer(self, question: str,
                         sources: list[MinimalSource]) -> str:

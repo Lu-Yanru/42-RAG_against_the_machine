@@ -71,14 +71,16 @@ class TestIndexerBuild:
     def test_build_produces_one_metadata_entry_per_chunk(self):
         chunks = _all_mini_repo_chunks(FIXTURE_ROOT)
         builder = Indexer(save_dir="unused")
-        builder.build(raw_data=FIXTURE_ROOT)
+        builder.load_chunks(raw_data=FIXTURE_ROOT)
+        builder.build()
         assert len(builder.metadata) == len(chunks)
         assert all(isinstance(m, MinimalSource) for m in builder.metadata)
 
     def test_metadata_order_matches_chunk_order(self):
         chunks = _all_mini_repo_chunks(FIXTURE_ROOT)
         builder = Indexer(save_dir="unused")
-        builder.build(raw_data=FIXTURE_ROOT)
+        builder.load_chunks(raw_data=FIXTURE_ROOT)
+        builder.build()
         for chunk, source in zip(chunks, builder.metadata):
             assert source.file_path == chunk.file_path
             assert source.first_character_index == chunk.first_character_index
@@ -90,7 +92,8 @@ class TestIndexerPersistRoundTrip:
         # Enforces the "store only offsets, never chunk text" decision.
         chunks = _all_mini_repo_chunks(FIXTURE_ROOT)
         builder = Indexer(save_dir=str(tmp_path))
-        builder.build(raw_data=FIXTURE_ROOT)
+        builder.load_chunks(raw_data=FIXTURE_ROOT)
+        builder.build()
         builder.save()
 
         with open(tmp_path / "chunk_metadata.json", encoding="utf-8") as f:
@@ -105,7 +108,8 @@ class TestIndexerPersistRoundTrip:
     def test_reloaded_index_returns_the_relevant_chunk(self, tmp_path):
         chunks = _all_mini_repo_chunks(FIXTURE_ROOT)
         builder = Indexer(save_dir=str(tmp_path))
-        builder.build(raw_data=FIXTURE_ROOT)
+        builder.load_chunks(raw_data=FIXTURE_ROOT)
+        builder.build()
         builder.save()
 
         # Fresh Indexer instance simulates a new process loading
@@ -134,11 +138,13 @@ class TestIndexerPersistRoundTrip:
         # first, not append to or corrupt it.
         chunks_a = _all_mini_repo_chunks(FIXTURE_ROOT)
         builder = Indexer(save_dir=str(tmp_path))
-        builder.build(raw_data=FIXTURE_ROOT)
+        builder.load_chunks(raw_data=FIXTURE_ROOT)
+        builder.build()
         builder.save()
 
         chunks_b = _all_mini_repo_chunks(FIXTURE_ROOT, max_chunk_size=50)
-        builder.build(FIXTURE_ROOT, max_chunk_size=50)
+        builder.load_chunks(raw_data=FIXTURE_ROOT, max_chunk_size=50)
+        builder.build()
         builder.save()
 
         builder.load()
