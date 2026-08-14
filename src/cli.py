@@ -197,7 +197,7 @@ class CLI:
         print(f"Evaluating '{student_search_results_path}' "
               f"against '{dataset_path}'...")
         evaluator = Evaluator(student_search_results_path, dataset_path)
-        print(f"Recall@{evaluator.k}: {evaluator.mean_recall:.2f} "
+        print(f"Recall@{evaluator.k}: {evaluator.mean_recall:.3f} "
               f"for {len(evaluator.matched_res)} questions.")
 
 

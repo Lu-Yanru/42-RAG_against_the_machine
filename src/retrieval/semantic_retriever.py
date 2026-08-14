@@ -43,16 +43,22 @@ class SemanticRetriever:
             return []
 
         output: list[list[MinimalSource]] = [[] for _ in self.queries]
+        # keep only non-empty queries
         live_idx = [i for i, q in enumerate(self.queries) if q.strip()]
         live_queries = [self.queries[i] for i in live_idx]
 
         if live_queries:
+            # numpy array of shape (num_live_queries, dimensions_of_vector)
             query_vecs = self.encoder.encode(live_queries)
+            # Transpose to (score, num_chunks)
             # Both sides are L2-normalized, so a dot product is
             # cosine similarity.
             scores = query_vecs @ self.sem_indexer.embeddings.T
 
             for local_i, global_i in enumerate(live_idx):
+                # returns the indices that would sort the array,
+                # ascending by default -> [::-1] to reverse
+                # [:self.k] take the top k indices
                 top_idx = np.argsort(scores[local_i])[::-1][:self.k]
                 output[global_i] = [self.sem_indexer.metadata[j]
                                     for j in top_idx]

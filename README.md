@@ -37,14 +37,15 @@ Python code is chunked based on the Abstract Syntax Tree (AST). Chunks are split
 If one of the class or function exceed `max_chunk_size`, then spilt it further as plain text. 
 
 ### Retrieval method
+This project implements lexical, semantic and hybrid retrieval.
+
 #### Lexical (sparse) retrieval
 The **Best Match 25 (BM25)** algorithm is used to search the index and returns the top-k most relevant chunks to the prompt. Each result is a source location (a file path). The result is stored as a JSON file under `data/output/search_results`.
 
 BM25 is a statistical ranking function based on term frequency (TF) and inverse document frequency (IDF).
 
 #### Semantic (dense) retrieval
-using `all-MiniLM-L6-v2`
-
+This project also uses the sentence-transformers model `all-MiniLM-L6-v2` to index and retrieve semantically relevant chunks to the prompt. The sentence-transformers model maps sentences & paragraphs to a 384 dimensional dense vector space and finds the chunk with the most similar vectors to the prompt.
 
 #### Hybrid
 **Reciprocal Rank Fusion (RRF)** is a rank aggregation methods that combines rankings from multiple sources into a single, unified ranking. It combines rankings, not scores, so it needs no score normalization.
