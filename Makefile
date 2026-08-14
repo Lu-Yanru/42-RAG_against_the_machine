@@ -89,6 +89,15 @@ moulinette_code:
 		"data/datasets/AnsweredQuestions/dataset_code_public.json" \
 		--k 10 --max_context_length 2000
 
+
+# bonus
+index_semantic:
+	uv run python -m src index --method "semantic"
+
+index_hybrid:
+	uv run python -m src index --method "hybrid"
+
+
 .PHONY: all install run help debug clean fclean lint lint-strict re \
 		index search search_dataset answer answer_dataset evaluate \
-		moulinette-docs moulinette-code
+		moulinette-docs moulinette-code index_semantic index_hybrid

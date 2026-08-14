@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 import sys
 
+from src.config import INDEX_DIR, RAW_DATA, MAX_CHUNK_SIZE
 from src.indexing.tokenizer import build_tokenizer
 from src.ingest.chunking import ChunkError
 from src.ingest.chunking_text import TextChunker, MarkdownChunker
@@ -17,15 +18,12 @@ class IndexingError(Exception):
 
 
 class Indexer:
-    def __init__(self, save_dir: str = "data/processed/") -> None:
+    def __init__(self, save_dir: str = INDEX_DIR) -> None:
         self.save_dir = Path(save_dir)
         self.save_path = self.save_dir / "chunk_metadata.json"
 
-    def build(self, raw_data: str = "data/raw",
-              max_chunk_size: int = 2000) -> None:
-        """
-        Create indexes from the raw data.
-        """
+    def load_chunks(self, raw_data: str = RAW_DATA,
+                    max_chunk_size: int = MAX_CHUNK_SIZE) -> None:
         try:
             self.loader = Loader(raw_data)
         except LoadError as e:
@@ -74,6 +72,16 @@ class Indexer:
             last_character_index=c.last_character_index
         ) for c in self.chunks]
 
+    def build(self) -> None:
+        """
+        Create indexes from the raw data.
+        """
+        if not hasattr(self, "texts") or not self.texts:
+            raise IndexingError(
+                "IndexingError: the given Indexer has no chunks. "
+                "Call indexer.load_chunks(...) "
+                "before Indexer.build(...).")
+
         self.tokenizer = build_tokenizer()
         self.corpus_tokenized = self.tokenizer.tokenize(self.texts,
                                                         return_as="tuple")
@@ -88,9 +96,7 @@ class Indexer:
             with open(self.save_path, "w", encoding="utf-8") as f:
                 json.dump([m.model_dump() for m in self.metadata], f, indent=4)
         except (json.JSONDecodeError, OSError) as e:
-            print(f"Error: Failed to save indexes: {e} Exiting...",
-                  file=sys.stderr)
-            exit(1)
+            raise IndexingError(f"Error: Failed to save indexes: {e}")
 
     def load(self) -> None:
         """

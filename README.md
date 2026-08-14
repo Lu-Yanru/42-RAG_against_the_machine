@@ -37,9 +37,17 @@ Python code is chunked based on the Abstract Syntax Tree (AST). Chunks are split
 If one of the class or function exceed `max_chunk_size`, then spilt it further as plain text. 
 
 ### Retrieval method
+#### Lexical (sparse) retrieval
 The **Best Match 25 (BM25)** algorithm is used to search the index and returns the top-k most relevant chunks to the prompt. Each result is a source location (a file path). The result is stored as a JSON file under `data/output/search_results`.
 
 BM25 is a statistical ranking function based on term frequency (TF) and inverse document frequency (IDF).
+
+#### Semantic (dense) retrieval
+using `all-MiniLM-L6-v2`
+
+
+#### Hybrid
+**Reciprocal Rank Fusion (RRF)** is a rank aggregation methods that combines rankings from multiple sources into a single, unified ranking. It combines rankings, not scores, so it needs no score normalization.
 
 ### Performance analysis
 The retrieval quality is measured with the **recall@k** metric.
@@ -47,6 +55,7 @@ For each question, recall@k is the share of its correct sources that you retriev
 top-k results. A correct source counts as found when one of your results is in the same
 file and overlaps its character range (IoU >= 0.05).
 
+#### Lexical retrieval
 |Metric | Target | Status |
 |-------|--------|--------|
 |Indexing time | <= 5 min |✅ < 1 min|
@@ -54,6 +63,22 @@ file and overlaps its character range (IoU >= 0.05).
 |Recall@5 for docs | >= 80% | ✅ 84.0%|
 |Recall@5 for code | >= 50% | ✅ 50.5%|
  
+#### Semantic retrieval
+|Metric | Target | Status |
+|-------|--------|--------|
+|Indexing time | <= 5 min |✅ < 2 min|
+|Retrieval throughput| <= 90s for 200 questions | ✅ < 2s|
+|Recall@5 for docs | >= 80% | ✅ 84.0%|
+|Recall@5 for code | >= 50% | ✅ 50.5%|
+
+#### Hybrid retrieval
+|Metric | Target | Status |
+|-------|--------|--------|
+|Indexing time | <= 5 min |✅ < 2 min|
+|Retrieval throughput| <= 90s for 200 questions | ✅ < 2s|
+|Recall@5 for docs | >= 80% | ✅ 84.0%|
+|Recall@5 for code | >= 50% | ✅ 50.5%|
+
 
 ### Design decisions
 
@@ -63,6 +88,10 @@ The **BM25** algorithm is chosen over the **Term Frequency–Inverse Document Fr
 - It measures term frequency and document relevance more accurately.
 - It accounts for document length normalization, giving fair weight to all documents.
 - It helps to deliver more relevant search results based on keyword matching and context.
+
+#### Incremental index
+
+#### Caching
 
 
 ### Challenges faced
@@ -195,5 +224,8 @@ The results are saved as JSON files in the following format:
 - [GeeksforGeeks What is BM25 algorithm?](https://www.geeksforgeeks.org/nlp/what-is-bm25-best-matching-25-algorithm/)
 - [Intersection over union (IoU) calculation for evaluating an image segmentation model](https://medium.com/data-science/intersection-over-union-iou-calculation-for-evaluating-an-image-segmentation-model-8b22e2e84686)
 - [Evaluation Metrics for Search and Recommendation Systems](https://weaviate.io/blog/retrieval-evaluation-metrics)
+- [Documentation all-MiniLM-L6-v2](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2)
+- [Sparse vs Dense vs Hybrid Retrieval: BM25, BERT, and Reranking Compared](https://www.abhik.ai/concepts/embeddings/sparse-vs-dense)
+- [Reciprocal Rank Fusion (RRF) explained in 4 mins — How to score results form multiple retrieval methods in RAG](https://medium.com/@devalshah1619/mathematical-intuition-behind-reciprocal-rank-fusion-rrf-explained-in-2-mins-002df0cc5e2a)
 
 AI is used to help create tests and debug the code, explain RAG concepts in simple language with examples and explain documentations of the `bm25s`, `PyTorch` and `transformers` libraries. 

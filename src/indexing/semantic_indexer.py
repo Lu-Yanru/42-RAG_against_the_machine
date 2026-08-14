@@ -1,0 +1,85 @@
+"""Build and persist a semantic index."""
+
+
+import json
+import numpy as np
+from pathlib import Path
+import sys
+
+from src.config import SEMANTIC_INDEX_DIR, MAX_CHUNK_SIZE
+from src.indexing.indexer import Indexer
+from src.indexing.semantic_encoder import SemanticEncoder
+from src.models import MinimalSource
+
+
+class SemanticIndexingError(Exception):
+    """Error related to semantic indexing."""
+    pass
+
+
+class SemanticIndexer:
+    """
+    Builds and persists a dense-embedding sibling index alongside the
+    BM25 index. Reuses an already-built `Indexer`'s `.chunks`/
+    `.texts` instead of re-running Loader/Chunker, so chunk
+    boundaries stay identical to the BM25 index.
+    """
+    EMBEDDING_FILENAME = "semantic_embeddings.npy"
+    METADATA_FILENAME = "semantic_metadata.json"
+
+    def __init__(self, indexer: Indexer,
+                 save_dir: str = SEMANTIC_INDEX_DIR) -> None:
+        self.indexer = indexer
+        self.save_dir = Path(save_dir)
+        self.embeddings_path = self.save_dir / self.EMBEDDING_FILENAME
+        self.metadata_path = self.save_dir / self.METADATA_FILENAME
+
+    def build(self) -> None:
+        if not hasattr(self.indexer, "chunks") or not self.indexer.chunks:
+            raise SemanticIndexingError(
+                "SemanticIndexingError: the given Indexer has no chunks. "
+                "Call indexer.load_chunks(...) "
+                "before SemanticIndexer.build(...).")
+
+        self.encoder = SemanticEncoder()
+        self.metadata = [MinimalSource(
+            file_path=c.file_path,
+            first_character_index=c.first_character_index,
+            last_character_index=c.last_character_index
+        ) for c in self.indexer.chunks]
+
+        self.embeddings = self.encoder.encode(self.indexer.texts)
+
+    def save(self) -> None:
+        """Save the semantic embeddings and chunk metadata."""
+        self.save_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            np.save(self.embeddings_path, self.embeddings)
+            with open(self.metadata_path, "w", encoding="utf-8") as f:
+                json.dump([m.model_dump() for m in self.metadata], f, indent=4)
+        except (json.JSONDecodeError, OSError) as e:
+            raise SemanticIndexingError(
+                f"Error: Failed to save semantic indexes: {e}")
+
+    def load(self) -> None:
+        """
+        Reload a previously persisted semantic index for querying.
+        Raises SemanticIndexingError if nothing has been indexed yet.
+        """
+        if not self.save_dir.exists() \
+                or not self.embeddings_path.exists() \
+                or not self.metadata_path.exists():
+            raise SemanticIndexingError(
+                "SemanticIndexingError: No persisted semantic index found "
+                f"under '{self.save_dir}'. Run 'index --method semantic' "
+                "or 'index --method hybrid' first.")
+
+        try:
+            self.embeddings = np.load(self.embeddings_path)
+            with open(self.metadata_path, "r", encoding="utf-8") as f:
+                raw = json.load(f)
+            self.metadata = [MinimalSource.model_validate(m) for m in raw]
+        except (json.JSONDecodeError, OSError, ValueError, TypeError) as e:
+            raise SemanticIndexingError(
+                "SemanticIndexingError: Failed to load persisted semantic "
+                f"index: {e}")
