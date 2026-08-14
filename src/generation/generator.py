@@ -1,7 +1,9 @@
+import os
 from pathlib import Path
 import re
 import sys
 from typing import Any, cast
+# import time
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -71,11 +73,16 @@ class Generator:
             self.model_name,
             dtype=self._dtype,
             trust_remote_code=trust_remote_code,
+            attn_implementation="sdpa",
         )
         self._model = cast(Any, model).to(self._device)
         # Set model in eval mode (as opposed to training mode)
         if self._model is not None:
             self._model.eval()
+
+        cpu_num = os.cpu_count()
+        if cpu_num is not None:
+            torch.set_num_interop_threads(cpu_num)
 
     def generate_answer(self, question: str,
                         sources: list[MinimalSource]) -> str:
@@ -102,6 +109,7 @@ class Generator:
         inputs = tokenizer(prompt_text,
                            return_tensors="pt").to(self._device)
 
+        # start = time.perf_counter()
         # Greedy decoding to stay close to the context,
         # no creative generation
         with torch.no_grad():
@@ -111,8 +119,17 @@ class Generator:
                 do_sample=False,
             )
 
+        # elapsed = time.perf_counter() - start
+
         input_length = inputs["input_ids"].shape[1]
         generated = output_ids[0][input_length:]
+
+        # generated_len = output_ids.shape[1] - inputs["input_ids"].shape[1]
+        # print(f"device={self._device} "
+        #       f"prompt_tokens={inputs['input_ids'].shape[1]} "
+        #       f"generated_tokens={generated_len} time={elapsed:.2f}s "
+        #       f"tok/s={generated_len/elapsed:.1f}", file=sys.stderr)
+
         raw_text = tokenizer.decode(generated, skip_special_tokens=True)
         return Generator.strip_thinking(raw_text)
 
