@@ -69,4 +69,4 @@ class SemanticEncoder:
         Returns the number of dimensions in the output of
         SentenceTransformer.encode().
         """
-        return cast(int, self._model.get_sentence_embedding_dimension())
+        return cast(int, self._model.get_embedding_dimension())

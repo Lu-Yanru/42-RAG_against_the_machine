@@ -25,7 +25,7 @@ def mocked_st():
     downloads real weights. get_sentence_embedding_dimension is
     pre-wired for when the bug below gets fixed."""
     model = MagicMock()
-    model.get_sentence_embedding_dimension.return_value = 4
+    model.get_embedding_dimension.return_value = 4
     with patch("src.indexing.semantic_encoder.SentenceTransformer") as st_cls:
         st_cls.return_value = model
         yield st_cls, model
@@ -42,9 +42,7 @@ def _mini_repo_indexer() -> Indexer:
 
 class TestSemanticEncoderDimBug:
     """SemanticEncoder.dim calls self._model.get_sentence_embedding
-    .dimension() -- should be get_sentence_embedding_dimension().
-    Documented as xfail(strict=True) rather than papered over; remove
-    the marker once the property is fixed."""
+    .dimension()."""
 
     def test_dim_returns_the_model_dimension(self, mocked_st):
         encoder = SemanticEncoder()

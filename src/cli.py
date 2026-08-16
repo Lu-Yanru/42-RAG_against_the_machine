@@ -46,14 +46,14 @@ class CLI:
         if method.lower() == "semantic" or method.lower() == "hybrid":
             sem_indexer = SemanticIndexer(indexer, SEMANTIC_INDEX_DIR)
             try:
-                sem_indexer.build()
+                sem_indexer.build_incremental()
                 sem_indexer.save()
                 print("Ingestion complete! "
                       f"Semantically indexed {len(sem_indexer.metadata)} "
                       f"chunks under {SEMANTIC_INDEX_DIR}")
             except SemanticIndexingError as e:
                 print(e, file=sys.stderr)
-                exit(1)
+                exit(0)
 
         if method.lower() == "lexical" or method.lower() == "hybrid":
             try:

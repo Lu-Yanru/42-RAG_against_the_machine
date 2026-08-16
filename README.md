@@ -94,7 +94,7 @@ The **BM25** algorithm is chosen over the **Term Frequency–Inverse Document Fr
 This project implements **incremental chunking** and **incremental indexing** for semantic indexing.
 When a file changes, re-chunk and re-index only that file instead of rebuilding the whole index.
 
-Incremental indexing is not implemented for lexical indexing, because the `bm25s` library does not support incremental indexing, but instead achieve its speed by precomputing all possible term-document BM25 scores at index time.
+Incremental indexing is not implemented for lexical indexing, because the `bm25s` library does not support incremental indexing, but instead achieve its speed by precomputing all possible term-document BM25 scores at index time. Based on my performance test, indexing the whole corpus with `bm25s` only takes less than 1 min, which is well less than the target 5 min. Therefore, I don't see the need to switch to another library jsut to implement incremental lexical indexing.
 
 #### Caching
 

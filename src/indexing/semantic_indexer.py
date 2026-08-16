@@ -4,8 +4,10 @@
 import json
 import numpy as np
 from pathlib import Path
+from pydantic import ValidationError
 
 from src.config import SEMANTIC_INDEX_DIR
+from src.indexing.hash import chunk_key
 from src.indexing.indexer import Indexer
 from src.indexing.semantic_encoder import SemanticEncoder
 from src.models import MinimalSource
@@ -49,6 +51,75 @@ class SemanticIndexer:
 
         self.embeddings = self.encoder.encode(self.indexer.texts)
 
+    def build_incremental(self) -> None:
+        """
+        Like build(), but only encodes chunks not already present in
+        the previously persisted semantic index. Chunk identity is
+        matched by (file_path, start, end) against the old semantic
+        metadata, so a chunk that was never
+        actually embedded before is correctly (re-)encoded
+        even though its source file
+        looks "unchanged" to the lexical incremental pass.
+        """
+        if not hasattr(self.indexer, "chunks") or not self.indexer.chunks:
+            raise SemanticIndexingError(
+                "No new chunks to be indexed.")
+
+        self.encoder = SemanticEncoder()
+        old_metadata, old_embeddings = self._load_old()
+        dim_ok = (old_embeddings.ndim == 2
+                  and old_embeddings.shape[0] == len(old_metadata)
+                  and old_embeddings.shape[1] == self.encoder.dim)
+        old_by_key = ({chunk_key(m): row
+                       for row, m in enumerate(old_metadata)}
+                      if dim_ok else {})
+
+        kept_meta: list[MinimalSource] = []
+        kept_rows: list[int] = []
+        for m in self.indexer.metadata:
+            row = old_by_key.get(chunk_key(m))
+            if row is not None:
+                kept_meta.append(m)
+                kept_rows.append(row)
+
+        kept_keys = {chunk_key(m) for m in kept_meta}
+        to_encode = [(m, t) for m, t in zip(self.indexer.metadata,
+                                            self.indexer.texts)
+                     if chunk_key(m) not in kept_keys]
+        to_encode_meta = [m for m, _ in to_encode]
+        to_encode_texts = [t for _, t in to_encode]
+
+        new_embeddings = self.encoder.encode(to_encode_texts)
+
+        if kept_rows:
+            self.embeddings = np.vstack(
+                [old_embeddings[kept_rows], new_embeddings]
+            )
+        else:
+            self.embeddings = new_embeddings
+        self.metadata = kept_meta + to_encode_meta
+
+    def _load_old(self) -> tuple[list[MinimalSource], np.ndarray]:
+        """
+        Best-effort read of the previously persisted semantic index.
+        Returns ([], an empty array) if nothing has been embedded
+        before, or the persisted files are unreadable. Every current
+        chunk is then encoded, same as build()'s full path.
+        """
+        if not self.embeddings_path.exists() \
+                or not self.metadata_path.exists():
+            return [], np.empty((0, 0), dtype=np.float32)
+
+        try:
+            embeddings = np.load(self.embeddings_path)
+            with open(self.metadata_path, "r", encoding="utf-8") as f:
+                raw = json.load(f)
+            metadata = [MinimalSource.model_validate(m) for m in raw]
+            return metadata, embeddings
+        except (json.JSONDecodeError, OSError, ValueError, TypeError,
+                ValidationError):
+            return [], np.empty((0, 0), dtype=np.float32)
+
     def save(self) -> None:
         """Save the semantic embeddings and chunk metadata."""
         self.save_dir.mkdir(parents=True, exist_ok=True)
@@ -78,7 +149,8 @@ class SemanticIndexer:
             with open(self.metadata_path, "r", encoding="utf-8") as f:
                 raw = json.load(f)
             self.metadata = [MinimalSource.model_validate(m) for m in raw]
-        except (json.JSONDecodeError, OSError, ValueError, TypeError) as e:
+        except (json.JSONDecodeError, OSError, ValueError,
+                TypeError, ValidationError) as e:
             raise SemanticIndexingError(
                 "SemanticIndexingError: Failed to load persisted semantic "
                 f"index: {e}")
