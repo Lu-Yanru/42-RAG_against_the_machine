@@ -5,6 +5,7 @@ score(doc) = sum(1 / (RRF_K + rank + 1))
 
 
 from src.config import RRF_K
+from src.indexing.hash import chunk_key
 from src.models import MinimalSource
 from src.retrieval.retriever import Retriever
 from src.retrieval.semantic_retriever import SemanticRetriever
@@ -41,15 +42,9 @@ class HybridRetriever:
 
         for ranked_list in (lex_list, sem_list):
             for rank, source in enumerate(ranked_list):
-                key = HybridRetriever.key(source)
+                key = chunk_key(source)
                 scores[key] = scores.get(key, 0.0) + 1.0 / (RRF_K + rank + 1)
                 by_key[key] = source
 
         ranked = sorted(scores, key=lambda k: scores[k], reverse=True)
         return [by_key[k] for k in ranked[:self.k]]
-
-    @staticmethod
-    def key(source: MinimalSource) -> tuple[str, int, int]:
-        """Create dict key from a minimal source."""
-        return (source.file_path, source.first_character_index,
-                source.last_character_index)

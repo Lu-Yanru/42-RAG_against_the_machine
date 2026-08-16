@@ -1,6 +1,7 @@
 import ast
 import sys
 from typing import TypeGuard
+from tqdm import tqdm
 
 from src.ingest.chunking import Chunk, Chunker
 from src.ingest.loader import File
@@ -17,7 +18,9 @@ class PythonChunker(Chunker):
 
     def chunk(self) -> list[Chunk]:
         chunks = []
-        for file in self.files:
+        for file in tqdm(self.files, desc="Chunking py files"):
+            if not file.content.strip():
+                continue
             try:
                 tree = ast.parse(file.content, filename=file.file_path)
             except SyntaxError as e:

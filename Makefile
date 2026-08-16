@@ -14,7 +14,7 @@ debug:
 	uv run python -m pdb -m src
 
 test:
-	uv run pytest tests/
+	uv run pytest tests/ -m "not slow"
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +

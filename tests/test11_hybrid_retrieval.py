@@ -14,6 +14,7 @@ needs:
 """
 from unittest.mock import MagicMock, patch
 
+from src.indexing.hash import chunk_key
 from src.models import MinimalSource
 from src.retrieval.hybrid_retriever import HybridRetriever
 
@@ -48,14 +49,14 @@ class TestKey:
         a = _source("x.py")
         b = _source("x.py")
         assert a is not b
-        assert HybridRetriever.key(a) == HybridRetriever.key(b)
+        assert chunk_key(a) == chunk_key(b)
 
     def test_different_offsets_produce_different_keys(self):
         a = MinimalSource(file_path="x.py", first_character_index=0,
                           last_character_index=10)
         b = MinimalSource(file_path="x.py", first_character_index=5,
                           last_character_index=15)
-        assert HybridRetriever.key(a) != HybridRetriever.key(b)
+        assert chunk_key(a) != chunk_key(b)
 
 
 class TestFuseRRFMath:

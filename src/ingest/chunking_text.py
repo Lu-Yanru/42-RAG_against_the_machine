@@ -1,4 +1,5 @@
 import re
+from tqdm import tqdm
 
 from src.ingest.chunking import Chunk, Chunker
 from src.ingest.loader import File
@@ -16,7 +17,7 @@ class TextChunker(Chunker):
 
     def chunk(self) -> list[Chunk]:
         chunks = []
-        for file in self.files:
+        for file in tqdm(self.files, desc="Chunking txt files"):
             spans = self.chunk_span(file.content, file_path=file.file_path)
 
             for start, end in spans:
@@ -37,7 +38,7 @@ class MarkdownChunker(TextChunker):
 
     def chunk(self) -> list[Chunk]:
         chunks = []
-        for file in self.files:
+        for file in tqdm(self.files, desc="Chunking md files"):
             # First chunk in sections
             sections = MarkdownChunker.md_section_span(file.content)
             packed_secs = self.greedy_pack(sections)

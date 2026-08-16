@@ -68,7 +68,7 @@ file and overlaps its character range (IoU >= 0.05).
 |Metric | Status |
 |-------|--------|
 |Indexing time | < 2 min|
-|Retrieval throughput| < 8s|
+|Retrieval throughput| < 8s for 200 questions|
 |Recall@5 for docs | 56.0%|
 |Recall@5 for code | 35.4%|
 
@@ -76,7 +76,7 @@ file and overlaps its character range (IoU >= 0.05).
 |Metric | Status |
 |-------|--------|
 |Indexing time | < 2 min|
-|Retrieval throughput| < 8s|
+|Retrieval throughput| < 8s for 200 questions|
 |Recall@5 for docs | 81.0%|
 |Recall@5 for code | 51.5%|
 
@@ -91,6 +91,10 @@ The **BM25** algorithm is chosen over the **Term Frequency–Inverse Document Fr
 - It helps to deliver more relevant search results based on keyword matching and context.
 
 #### Incremental index
+This project implements **incremental chunking** and **incremental indexing** for semantic indexing.
+When a file changes, re-chunk and re-index only that file instead of rebuilding the whole index.
+
+Incremental indexing is not implemented for lexical indexing, because the `bm25s` library does not support incremental indexing, but instead achieve its speed by precomputing all possible term-document BM25 scores at index time.
 
 #### Caching
 
@@ -227,6 +231,7 @@ The results are saved as JSON files in the following format:
 - [PyTorch library documentation](https://docs.pytorch.org/docs/2.13/index.html)
 - [Transformers library documentation](https://huggingface.co/docs/transformers/index)
 - [GeeksforGeeks What is BM25 algorithm?](https://www.geeksforgeeks.org/nlp/what-is-bm25-best-matching-25-algorithm/)
+- [BM25S: Accelerated Sparse BM25 Retrieval](https://www.emergentmind.com/topics/bm25s)
 - [Intersection over union (IoU) calculation for evaluating an image segmentation model](https://medium.com/data-science/intersection-over-union-iou-calculation-for-evaluating-an-image-segmentation-model-8b22e2e84686)
 - [Evaluation Metrics for Search and Recommendation Systems](https://weaviate.io/blog/retrieval-evaluation-metrics)
 - [Documentation all-MiniLM-L6-v2](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2)

@@ -42,7 +42,7 @@ class CLI:
 
         start = timer()
         indexer = Indexer(INDEX_DIR)
-        indexer.load_chunks(max_chunk_size=max_chunk_size)
+        indexer.load_chunks_incremental(max_chunk_size=max_chunk_size)
         if method.lower() == "semantic" or method.lower() == "hybrid":
             sem_indexer = SemanticIndexer(indexer, SEMANTIC_INDEX_DIR)
             try:

@@ -7,6 +7,7 @@ MAX_CHUNK_SIZE = 2000
 RAW_DATA = "data/raw"
 INDEX_DIR = "data/processed/lexical"
 VALID_METHODS = {"lexical", "semantic", "hybrid"}
+HASH_PATH = "data/processed/file_hashes.json"
 
 DATASET_PATH = "data/datasets/UnansweredQuestions/dataset_docs_public.json"
 SEARCH_RESULTS_SAVE_DIR = "data/output/search_results"
