@@ -82,11 +82,9 @@ class Indexer:
         content hash matches the last persisted hash, reusing its
         previously computed chunk offsets instead.
 
-        Falls back to chunking every file -- identical output to
-        load_chunks() -- when there is no prior hash, or when
-        max_chunk_size differs from the one the hash was built
-        with, since chunk boundaries cut under a different cap can't
-        be reused.
+        Falls back to chunking every file when there is no prior hash,
+        or when max_chunk_size differs from the one the hash was built
+        with.
         """
         try:
             self.loader = Loader(raw_data)
@@ -102,6 +100,7 @@ class Indexer:
         old_hash = hash.load_hash(Path(hash_path))
         needs_rechunk, unchanged = hash.diff(
             old_hash, current_hashes, max_chunk_size)
+        self.has_changes = bool(needs_rechunk)
 
         old_by_path = self._old_metadata_by_path()
         if old_by_path is None:
