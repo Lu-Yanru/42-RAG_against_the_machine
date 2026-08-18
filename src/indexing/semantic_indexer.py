@@ -63,10 +63,10 @@ class SemanticIndexer:
         """
         if self.embeddings_path.exists() \
                 and self.metadata_path.exists():
-            if not hasattr(self.indexer, "chunks") \
-                    or not self.indexer.chunks:
+            if not hasattr(self.indexer, "metadata") \
+                    or not self.indexer.metadata:
                 raise SemanticIndexingError(
-                    "No new chunks to be indexed.")
+                    "No chunks to be indexed.")
 
         self.encoder = SemanticEncoder()
         old_metadata, old_embeddings = self._load_old()

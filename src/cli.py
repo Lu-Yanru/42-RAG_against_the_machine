@@ -12,6 +12,7 @@ from src.generation.generator import Generator
 from src.indexing.indexer import Indexer, IndexingError
 from src.indexing.semantic_indexer import (SemanticIndexer,
                                            SemanticIndexingError)
+from src.indexing.hash import chunk_key
 from src.models import (MinimalSearchResults, MinimalAnswer, MinimalSource,
                         StudentSearchResults, StudentSearchResultsAndAnswer)
 from src.retrieval.query_cache import QueryCache
@@ -46,8 +47,20 @@ class CLI:
         indexer.load_chunks_incremental(max_chunk_size=max_chunk_size)
         if method.lower() == "semantic" or method.lower() == "hybrid":
             sem_indexer = SemanticIndexer(indexer, SEMANTIC_INDEX_DIR)
-            if not indexer.has_changes \
-                    and sem_indexer.embeddings_path.exists():
+            # Determine whether the existing semantic index already
+            # covers all current chunks. If so, skip rebuilding.
+            need_semantic = True
+            if sem_indexer.embeddings_path.exists() and \
+                    sem_indexer.metadata_path.exists():
+                old_meta, _ = sem_indexer._load_old()
+                if old_meta:
+                    old_keys = {chunk_key(m) for m in old_meta}
+                    curr_keys = {chunk_key(m) for m in indexer.metadata}
+                    if curr_keys.issubset(old_keys) \
+                            and not indexer.has_changes:
+                        need_semantic = False
+
+            if not need_semantic:
                 print("Semantic index unchanged. Skipping rebuild.")
             else:
                 try:
