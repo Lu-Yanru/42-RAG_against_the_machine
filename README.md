@@ -97,7 +97,7 @@ When a file changes, re-chunk and re-index only that file instead of rebuilding 
 Incremental indexing is not implemented for lexical indexing, because the `bm25s` library does not support incremental indexing, but instead achieve its speed by precomputing all possible term-document BM25 scores at index time. Based on my performance test, indexing the whole corpus with `bm25s` only takes less than 1 min, which is well less than the target 5 min. Therefore, I don't see the need to switch to another library jsut to implement incremental lexical indexing.
 
 #### Caching
-
+The results of both indexing and retrieval are cached in JSON files stored in `data/processed`. The former is stored as a list of file paths and hashes of their content, the latter is stored as a list of query hashes and a list of the retrieved entries. On the next run of `index` or `search` command, the program checks whether any of the hashes changed, load the results from the unchanges entries first, and only run indexing or search for the changed entries. This saves time for rerunning the commands.
 
 ### Challenges faced
 Document difficulties encountered and solutions

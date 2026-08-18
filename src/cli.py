@@ -46,22 +46,23 @@ class CLI:
         indexer.load_chunks_incremental(max_chunk_size=max_chunk_size)
         if method.lower() == "semantic" or method.lower() == "hybrid":
             sem_indexer = SemanticIndexer(indexer, SEMANTIC_INDEX_DIR)
-            if not indexer.has_changes and sem_indexer.embeddings_path.exists():
-                print(f"Semantic index unchanged. Skipping rebuild.")
+            if not indexer.has_changes \
+                    and sem_indexer.embeddings_path.exists():
+                print("Semantic index unchanged. Skipping rebuild.")
             else:
                 try:
                     sem_indexer.build_incremental()
                     sem_indexer.save()
                     print("Ingestion complete! "
-                        f"Semantically indexed {len(sem_indexer.metadata)} "
-                        f"chunks under {SEMANTIC_INDEX_DIR}")
+                          f"Semantically indexed {len(sem_indexer.metadata)} "
+                          f"chunks under {SEMANTIC_INDEX_DIR}")
                 except SemanticIndexingError as e:
                     print(e, file=sys.stderr)
                     exit(0)
 
         if method.lower() == "lexical" or method.lower() == "hybrid":
             if not indexer.has_changes and indexer.save_path.exists():
-                print(f"Lexical index unchanged. Skipping rebuild.")
+                print("Lexical index unchanged. Skipping rebuild.")
             else:
                 try:
                     indexer.build()
@@ -128,7 +129,7 @@ class CLI:
         hits: dict[int, list[MinimalSource]] = {}
         miss_indices: list[int] = []
         miss_queries: list[str] = []
-        for i, q in enumerate(queries):
+        for i, q in enumerate(tqdm(queries, desc="Loading from cache")):
             hit = cache.get(method, k, q) if cache is not None else None
             if hit is not None:
                 hits[i] = hit
@@ -136,10 +137,12 @@ class CLI:
                 miss_indices.append(i)
                 miss_queries.append(q)
 
-        if miss_queries:
+        if len(miss_queries) > 0:
             retriever = make_retriever(queries, k, method)
-            for idx, q, res in zip(miss_indices, miss_queries,
-                                   retriever.retrieve()):
+            for idx, q, res in tqdm(zip(miss_indices, miss_queries,
+                                    retriever.retrieve()),
+                                    total=len(miss_queries),
+                                    desc="Searching"):
                 hits[idx] = res
                 if cache is not None:
                     cache.put(method, k, q, res)
@@ -152,7 +155,9 @@ class CLI:
 
         results = [hits[i] for i in range(question_num)]
         result_sets = []
-        for question, sources in zip(question_sets, results):
+        for question, sources in tqdm(zip(question_sets, results),
+                                      desc="Saving search results",
+                                      total=len(results)):
             result_sets.append(MinimalSearchResults(
                 question_id=question.question_id,
                 question=question.question,
