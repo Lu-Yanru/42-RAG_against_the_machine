@@ -197,7 +197,7 @@ class CLI:
             print(res.file_path + " [" + str(res.first_character_index)
                   + ":" + str(res.last_character_index) + "]")
         generator = Generator()
-        print("\nAnswer:\n", generator.generate_answer(query, sources))
+        print(f"\nAnswer:\n{generator.generate_answer(query, sources)}")
         end = timer()
         print(f"\nAnswer generation time: {end - start:.2f}s.")
 

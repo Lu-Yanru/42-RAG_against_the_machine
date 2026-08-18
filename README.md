@@ -13,6 +13,8 @@ In practice, RAG has four stages:
 - **Augmenting**: filter those snippets and place them in the model’s context window.
 - **Generating**: read that context and produce the answer.
 
+The default LLM model used for answer generation is `Qwen/Qwen3-0.6B`.
+
 ### System architecture
 Describe your RAG pipeline components and how they
 interact

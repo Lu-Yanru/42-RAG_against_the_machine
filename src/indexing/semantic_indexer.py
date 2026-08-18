@@ -61,9 +61,12 @@ class SemanticIndexer:
         even though its source file
         looks "unchanged" to the lexical incremental pass.
         """
-        if not hasattr(self.indexer, "chunks") or not self.indexer.chunks:
-            raise SemanticIndexingError(
-                "No new chunks to be indexed.")
+        if self.embeddings_path.exists() \
+                and self.metadata_path.exists():
+            if not hasattr(self.indexer, "chunks") \
+                    or not self.indexer.chunks:
+                raise SemanticIndexingError(
+                    "No new chunks to be indexed.")
 
         self.encoder = SemanticEncoder()
         old_metadata, old_embeddings = self._load_old()
