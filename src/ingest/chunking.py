@@ -17,6 +17,7 @@ class Chunk:
     first_character_index: int
     last_character_index: int
     content: str
+    context: str = ""  # for e.g. class names
 
 
 class Chunker:

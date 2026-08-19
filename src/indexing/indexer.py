@@ -1,3 +1,4 @@
+import ast
 import bm25s
 import json
 from pathlib import Path
@@ -67,7 +68,8 @@ class Indexer:
             if chunks is not None:
                 self.chunks.extend(chunks)
 
-        self.texts = [c.content for c in self.chunks]
+        self.texts = [Indexer._index_text(c.content, c.file_path, c.context)
+                      for c in self.chunks]
         self.metadata = [MinimalSource(
             file_path=c.file_path,
             first_character_index=c.first_character_index,
@@ -113,11 +115,27 @@ class Indexer:
         kept_metadata: list[MinimalSource] = []
         kept_texts: list[str] = []
         for path in unchanged:
-            content = files_by_path[path].content
+            file = files_by_path[path]
+            content = file.content
+            class_contexts: list[tuple[int, int, str]] = []
+            if path.endswith(".py"):
+                try:
+                    tree = ast.parse(content, filename=path)
+                    class_contexts = PythonChunker._class_context(
+                        tree, file.line_offsets
+                    )
+                except SyntaxError:
+                    pass
             for m in old_by_path.get(path, []):
                 kept_metadata.append(m)
-                kept_texts.append(content[m.first_character_index:
-                                          m.last_character_index])
+                chunk_text = content[m.first_character_index:
+                                     m.last_character_index]
+                context = PythonChunker._enclosing_class(
+                    m.first_character_index, m.last_character_index,
+                    class_contexts
+                ) or ""
+                kept_texts.append(Indexer._index_text(chunk_text, path,
+                                                      context))
 
         changed_py = [f for f in self.loader.py_files
                       if f.file_path in needs_rechunk]
@@ -149,7 +167,9 @@ class Indexer:
             first_character_index=c.first_character_index,
             last_character_index=c.last_character_index)
             for c in new_chunks]
-        self.texts = kept_texts + [c.content for c in new_chunks]
+        self.texts = kept_texts + [
+            Indexer._index_text(c.content, c.file_path, c.context)
+            for c in new_chunks]
 
         hash.save_hash(Path(hash_path), max_chunk_size,
                        current_hashes)
@@ -228,3 +248,19 @@ class Indexer:
         except (json.JSONDecodeError, OSError) as e:
             raise IndexingError("IndexingError: Failed to load "
                                 f"persisted index: {e}")
+
+    @staticmethod
+    def _index_text(content: str, file_path: str, context: str = "") -> str:
+        """
+        Create the text handed to BM25/embeddings for one chunk.
+        Adds the file's stem twice,
+        once whole (matches a snake_case-phrased query like
+        "triton_flash_attention module") and once space-split (matches
+        "triton flash attention module"), plus, for a Python chunk
+        nested in a class, the enclosing class's qualified name.
+        """
+        stem = Path(file_path).stem
+        header = f"{stem} {stem.replace('_', ' ')}"
+        if context:
+            header += f" {context}"
+        return f"{header}\n{content}"

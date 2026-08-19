@@ -11,12 +11,12 @@ def chunk_metrics(max_chunk_size: int = 2000) -> None:
     print(f"max_chunk_size: {max_chunk_size}")
     if not isinstance(max_chunk_size, int):
         print("Error: max_chunk_size must be an integer.",
-                file=sys.stderr)
+              file=sys.stderr)
         exit(1)
     if max_chunk_size < 1 or max_chunk_size > 2000:
         print("Error: "
-                "max_chunk_size must be between 1 and 2000.",
-                file=sys.stderr)
+              "max_chunk_size must be between 1 and 2000.",
+              file=sys.stderr)
         exit(1)
 
     try:

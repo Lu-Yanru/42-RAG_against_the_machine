@@ -13,7 +13,7 @@ In practice, RAG has four stages:
 - **Augmenting**: filter those snippets and place them in the model’s context window.
 - **Generating**: read that context and produce the answer.
 
-The default LLM model used for answer generation is `Qwen/Qwen3-0.6B`.
+The default algorithm used for indexing and retrieval is BM25. The default LLM model used for answer generation is `Qwen/Qwen3-0.6B`.
 
 ### System architecture
 Describe your RAG pipeline components and how they
@@ -63,24 +63,24 @@ file and overlaps its character range (IoU >= 0.05).
 |-------|--------|--------|
 |Indexing time | <= 5 min |✅ < 1 min|
 |Retrieval throughput| <= 90s for 200 questions | ✅ < 2s|
-|Recall@5 for docs | >= 80% | ✅ 84.0%|
-|Recall@5 for code | >= 50% | ✅ 50.5%|
+|Recall@5 for docs | >= 80% | ✅ 87.0%|
+|Recall@5 for code | >= 50% | ✅ 67.7%|
  
 #### Semantic retrieval
 |Metric | Status |
 |-------|--------|
 |Indexing time | < 2 min|
 |Retrieval throughput| < 8s for 200 questions|
-|Recall@5 for docs | 56.0%|
-|Recall@5 for code | 35.4%|
+|Recall@5 for docs | 61.0%|
+|Recall@5 for code | 54.5%|
 
 #### Hybrid retrieval
 |Metric | Status |
 |-------|--------|
 |Indexing time | < 2 min|
 |Retrieval throughput| < 8s for 200 questions|
-|Recall@5 for docs | 81.0%|
-|Recall@5 for code | 51.5%|
+|Recall@5 for docs | 82.0%|
+|Recall@5 for code | 74.7%|
 
 
 ### Design decisions
@@ -96,13 +96,18 @@ The **BM25** algorithm is chosen over the **Term Frequency–Inverse Document Fr
 This project implements **incremental chunking** and **incremental indexing** for semantic indexing.
 When a file changes, re-chunk and re-index only that file instead of rebuilding the whole index.
 
-Incremental indexing is not implemented for lexical indexing, because the `bm25s` library does not support incremental indexing, but instead achieve its speed by precomputing all possible term-document BM25 scores at index time. Based on my performance test, indexing the whole corpus with `bm25s` only takes less than 1 min, which is well less than the target 5 min. Therefore, I don't see the need to switch to another library jsut to implement incremental lexical indexing.
+Incremental indexing is not implemented for lexical indexing, because the `bm25s` library does not support incremental indexing, but instead achieve its speed by precomputing all possible term-document BM25 scores at index time. Based on my performance test, indexing the whole corpus with `bm25s` only takes less than 1 min, which is well less than the target 5 min. Therefore, I don't see the need to switch to another library just to implement incremental lexical indexing.
 
 #### Caching
 The results of both indexing and retrieval are cached in JSON files stored in `data/processed`. The former is stored as a list of file paths and hashes of their content, the latter is stored as a list of query hashes and a list of the retrieved entries. On the next run of `index` or `search` command, the program checks whether any of the hashes changed, load the results from the unchanges entries first, and only run indexing or search for the changed entries. This saves time for rerunning the commands.
 
 ### Challenges faced
-Document difficulties encountered and solutions
+
+#### Improving code retireval quality
+After the initial chunking of the python scripts, the recall@5 of python code is just at 50%. After reflecting on the python code structure and common code questions, I realized that the basic chunking strategy does not include the module name/file name, and class names are also separated from the function definitions of this class. In order to improve this, a separate `context` field is added to the `Chunk` class to record class information of the chunked functions. The file name and context information are later tokenized together with the content of the chunk and included in the indexing. This improves the recall@5 of python code to 67.7%.
+
+#### Limitations of the `bm25s` library
+The `bm25s` library is chosen to implement the BM25 algorithm for calculating chunk relevance, because its documentation claims ease of use, fast throughput and efficient memory usage compared to the tranditional `rank-bm25` library. However, when I started doing the bonuses, I realized that the `bm25s` library does not support incremental indexing. Therefore, I only implemented incremental chunking and incremental indexing for semantic retrieval.
 
 ## Instructions
 This project uses `uv` for dependency management and a `Makefile` to automate common tasks.

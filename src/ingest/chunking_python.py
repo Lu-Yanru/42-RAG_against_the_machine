@@ -31,10 +31,15 @@ class PythonChunker(Chunker):
             units = PythonChunker._member_unit_span(tree.body, 0,
                                                     len(file.content),
                                                     file.line_offsets)
+            class_contexts = PythonChunker._class_context(tree,
+                                                          file.line_offsets)
             for u_start, u_end in units:
                 spans = self.chunk_span(file.content, start=u_start,
                                         end=u_end,
                                         file_path=file.file_path)
+                context = PythonChunker._enclosing_class(
+                    u_start, u_end, class_contexts
+                ) or ""
 
                 for start, end in spans:
                     chunks.append(Chunk(
@@ -42,6 +47,7 @@ class PythonChunker(Chunker):
                         first_character_index=start,
                         last_character_index=end,
                         content=file.content[start:end],
+                        context=context,
                     ))
         return chunks
 
@@ -146,3 +152,45 @@ class PythonChunker(Chunker):
         end = PythonChunker._def_end(node, line_offsets)
         return PythonChunker._member_unit_span(node.body, start,
                                                end, line_offsets)
+
+    @staticmethod
+    def _class_context(tree: ast.Module,
+                       line_offsets: list[int]) -> list[tuple[int, int, str]]:
+        """
+        Returns (class_start, class_end, qualified_name) for every
+        ClassDef in the module, at any nesting depth, qualified_name
+        dot-joined outer-to-inner (e.g. "Outer.Inner"). Does not
+        recurse into function bodies.
+        """
+        contexts: list[tuple[int, int, str]] = []
+
+        def walk(node: ast.AST, prefix: str) -> None:
+            for child in ast.iter_child_nodes(node):
+                if PythonChunker._is_class(child):
+                    start = PythonChunker._def_start(child, line_offsets)
+                    end = PythonChunker._def_end(child, line_offsets)
+                    qualified = (f"{prefix}.{child.name}" if prefix
+                                 else child.name)
+                    contexts.append((start, end, qualified))
+                    walk(child, qualified)
+                elif PythonChunker._is_def(child):
+                    continue
+                else:
+                    walk(child, prefix)
+
+        walk(tree, "")
+        return contexts
+
+    @staticmethod
+    def _enclosing_class(start: int, end: int,
+                         class_contexts: list[tuple[int, int, str]]) \
+            -> str | None:
+        """Innermost class whose span fully contains [start, end)."""
+        candidates = [(c_end - c_start, name)
+                      for c_start, c_end, name in class_contexts
+                      if c_start <= start and end <= c_end]
+        # Chunk is not inside any class
+        if not candidates:
+            return None
+        # Get the name of the inner most class
+        return min(candidates)[1]
