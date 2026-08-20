@@ -32,13 +32,13 @@ The pipeline has two phases, index-time and query-time, orchestrated entirely th
     │ MarkdownChunker(.md)     │
     │ PythonChunker  (.py, AST)│
     └─────────────┬────────────┘
-                    │ Chunk(file_path, first_char_idx, last_char_idx,
-                    │       content, context)
-                    ▼
+                  │ Chunk(file_path, first_char_idx, last_char_idx,
+                  │       content, context)
+                  ▼
             Indexer.load_chunks_incremental()
             skips files unchanged since last
             run (SHA-256 manifest, hash.py)
-                    │
+                   │
         ┌──────────┴───────────┐
         ▼                      ▼
     Indexer.build()      SemanticIndexer.build_incremental()
