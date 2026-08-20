@@ -1,3 +1,4 @@
+import ast
 from pathlib import Path
 import re
 import sys
@@ -9,6 +10,8 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from src.config import (MODEL_NAME, NO_CONTEXT_ANSWER,
                         MAX_NEW_TOKENS, MAX_SOURCE_CHARS)
+from src.ingest.chunking_python import PythonChunker
+from src.ingest.loader import Loader
 from src.models import MinimalSource
 
 
@@ -146,11 +149,16 @@ class Generator:
             if budget <= 0:
                 break
 
-            text = Generator.read_source_text(source)
+            content = Generator.read_file(source.file_path)
+            if content is None:
+                continue
+
+            text = Generator.read_source_text(source, content)
             if text is None:
                 continue
             budget -= len(text)
-            blocks.append(f"### Source: {source.file_path}\n{text}")
+            label = Generator.source_context_label(source, content)
+            blocks.append(f"### Source: {source.file_path}{label}\n{text}")
 
         context = "\n\n".join(blocks)
         user_content = (f"Question: {question}\n\nContext:\n{context}"
@@ -163,25 +171,61 @@ class Generator:
         ]
 
     @staticmethod
-    def read_source_text(source: MinimalSource) -> str | None:
+    def read_source_text(source: MinimalSource,
+                         content: str | None = None) -> str | None:
         """
         Re-slice source text from the raw file by offset.
         Returns None if the file cannot be read or the offsets
         no longer fit the file on disk.
         """
-        file_path = Path(source.file_path)
-        try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                content = f.read()
-        except (OSError, UnicodeDecodeError) as e:
-            print(f"Warning: could not read source '{source.file_path}': {e} "
-                  "Skipping this source.", file=sys.stderr)
-            return None
+        if content is None:
+            content = Generator.read_file(source.file_path)
+            if content is None:
+                return None
 
         if source.last_character_index > len(content):
             print(f"Warning: offsets for '{source.file_path}' no longer fit "
-                  "the file on disk. Skipping this source.", file=sys.stderr)
+                  "the file on disk. Skipping this source...", file=sys.stderr)
             return None
 
         return content[source.first_character_index:
                        source.last_character_index]
+
+    @staticmethod
+    def read_file(file_path: str) -> str | None:
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                return f.read()
+        except (OSError, UnicodeDecodeError) as e:
+            print(f"Warning: could not read source '{file_path}': {e} "
+                  "Skipping this source...", file=sys.stderr)
+            return None
+
+    @staticmethod
+    def source_context_label(source: MinimalSource,
+                             content: str | None = None) -> str:
+        """
+        Find the class context for the python source code.
+        Returns empty string for non-.py files, unreadable files,
+        or chunks not inside any class.
+        """
+        path = Path(source.file_path)
+        if path.suffix != ".py":
+            return ""
+        if content is None:
+            content = Generator.read_file(source.file_path)
+            if content is None:
+                return ""
+
+        try:
+            tree = ast.parse(content, filename=str(path))
+        except SyntaxError:
+            return ""
+
+        line_offsets = Loader.line_offsets(content)
+        class_contexts = PythonChunker._class_context(tree, line_offsets)
+        class_name = PythonChunker._enclosing_class(
+            source.first_character_index, source.last_character_index,
+            class_contexts
+        )
+        return f" (class {class_name})" if class_name else ""
