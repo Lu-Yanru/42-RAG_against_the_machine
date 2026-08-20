@@ -16,8 +16,88 @@ In practice, RAG has four stages:
 The default algorithm used for indexing and retrieval is BM25. The default LLM model used for answer generation is `Qwen/Qwen3-0.6B`.
 
 ### System architecture
-Describe your RAG pipeline components and how they
-interact
+The pipeline has two phases, index-time and query-time, orchestrated entirely through `src/cli.py`'s six commands.
+
+#### Index-time
+    data/raw/**/*.py, *.md, *.txt
+                │
+                ▼
+    Loader (src/ingest/loader.py)
+    reads files, computes line offsets
+                │
+                ▼
+            Chunkers
+    ┌──────────────────────────┐
+    │ TextChunker    (.txt)    │
+    │ MarkdownChunker(.md)     │
+    │ PythonChunker  (.py, AST)│
+    └─────────────┬────────────┘
+                    │ Chunk(file_path, first_char_idx, last_char_idx,
+                    │       content, context)
+                    ▼
+            Indexer.load_chunks_incremental()
+            skips files unchanged since last
+            run (SHA-256 manifest, hash.py)
+                    │
+        ┌──────────┴───────────┐
+        ▼                      ▼
+    Indexer.build()      SemanticIndexer.build_incremental()
+    BM25 over             SentenceTransformer over the SAME
+    tokenized chunks       chunk boundaries (reuses .chunks/.texts)
+        │                      │
+        ▼                      ▼
+    data/processed/lexical/   data/processed/semantic/
+    chunk_metadata.json       semantic_metadata.json
+    (BM25 model + vocab)      semantic_embeddings.npy
+
+- **Loader** (`src/ingest/loader.py`) walks `data/raw/`, reads every `.py`, `.md`, `.txt` file, and computes per-line character offsets so downstream AST-based chunking can align node.lineno to an absolute file offset. Unreadable files are skipped with a stderr warning, not a crash.
+- **Chunkers** (`src/ingest/chunking.py`, `chunking_text.py`, `chunking_python.py`) turn each file into `(file_path, first_character_index, last_character_index, content)` spans.
+- **Indexer** (`src/indexing/indexer.py`) tokenizes each chunk's text via and fits a `bm25s.BM25` index.
+
+#### Query-time
+    question(s)
+        │
+        ▼
+    QueryCache.get(method, k, query)
+        │
+     hit│              miss│
+        │                  ▼
+        │        --method lexical | semantic | hybrid
+        │                  │
+        │        ┌─────────┼─────────┐
+        │        ▼         ▼         ▼
+        │   Retriever  SemanticRet.  HybridRetriever
+        │   (BM25)     (cosine)      (RRF over both)
+        │        │         │         │
+        │        └─────────┼─────────┘
+        │                  ▼
+        │        QueryCache.put() + save()
+        │                  │
+        └──────────┬───────┘
+                   ▼
+        MinimalSource[] (file_path, offsets — no chunk text)
+                   │
+        ┌──────────┴───────────┐
+        ▼                      ▼
+    search / search_dataset   answer / answer_dataset
+        │                      │
+        ▼                      ▼
+    StudentSearchResults    Generator re-reads data/raw/<file_path>
+    saved to                at the stored offsets, builds prompt,
+    data/output/            runs Qwen3-0.6B
+    search_results/                │
+        │                          ▼
+        ▼                        StudentSearchResultsAndAnswer
+    Evaluator                    saved to data/output/
+    compares retrieved_sources   search_results_and_answer/
+    vs AnsweredQuestions
+    recall@k = same-file + IoU >= 0.05
+                          
+- `CLI.search / search_dataset` pick a retriever via `--method`: `lexical`/`semantic`/`hybrid`.
+- Before hitting a retriever, `CLI` checks `QueryCache` (`src/retrieval/query_cache.py`). Entries are keyed by `sha256(method|k|query)` and the whole cache is invalidated at once (not per-entry) if the lexical hash manifest's bytes change, since BM25's IDF is corpus-global and per-entry invalidation would be unsafe.
+- Retrieved `MinimalSource` objects (file path + offsets only) are written to `data/output/search_results/` as `StudentSearchResults`.
+- `CLI.answer` / `answer_dataset` feed those sources into **Generator** (`src/generation/generator.py`), which builds a prompt capped at `MAX_SOURCE_CHARS`, and runs a Qwen3-0.6B singleton to produce StudentSearchResultsAndAnswer.
+- **Evaluator** (`src/evaluation/evaluator.py`) matches `StudentSearchResults` against `AnsweredQuestions` by question_id and scores same-file + IoU ≥ 0.05 recall@k.
 
 ### Chunking strategy
 Files are split into chunks and stored as index that can be queried.
@@ -103,8 +183,8 @@ The results of both indexing and retrieval are cached in JSON files stored in `d
 
 ### Challenges faced
 
-#### Improving code retireval quality
-After the initial chunking of the python scripts, the recall@5 of python code is just at 50%. After reflecting on the python code structure and common code questions, I realized that the basic chunking strategy does not include the module name/file name, and class names are also separated from the function definitions of this class. In order to improve this, a separate `context` field is added to the `Chunk` class to record class information of the chunked functions. The file name and context information are later tokenized together with the content of the chunk and included in the indexing. This improves the recall@5 of python code to 67.7%.
+#### Improving code retrieval quality
+After the initial chunking of the python scripts, the recall@5 of python code is just at 50%. After reflecting on the python code structure and common code questions, I realized that the basic chunking strategy does not include the module name/file name, and class names are also separated from the function definitions of this class. In order to improve this, a separate `context` field is added to the `Chunk` class to record class information of the chunked functions. The module name and context information are later tokenized together with the content of the chunk and included in the indexing. This improves the recall@5 of python code to 67.7%.
 
 #### Limitations of the `bm25s` library
 The `bm25s` library is chosen to implement the BM25 algorithm for calculating chunk relevance, because its documentation claims ease of use, fast throughput and efficient memory usage compared to the tranditional `rank-bm25` library. However, when I started doing the bonuses, I realized that the `bm25s` library does not support incremental indexing. Therefore, I only implemented incremental chunking and incremental indexing for semantic retrieval.
@@ -245,4 +325,4 @@ The results are saved as JSON files in the following format:
 - [Sparse vs Dense vs Hybrid Retrieval: BM25, BERT, and Reranking Compared](https://www.abhik.ai/concepts/embeddings/sparse-vs-dense)
 - [Reciprocal Rank Fusion (RRF) explained in 4 mins — How to score results form multiple retrieval methods in RAG](https://medium.com/@devalshah1619/mathematical-intuition-behind-reciprocal-rank-fusion-rrf-explained-in-2-mins-002df0cc5e2a)
 
-AI is used to help create tests and debug the code, explain RAG concepts in simple language with examples and explain documentations of the `bm25s`, `PyTorch` and `transformers` libraries. 
+AI is used to help create tests and debug the code, explain RAG concepts in simple language with examples, explain documentations of the `bm25s`, `PyTorch` and `transformers` libraries, and help create the "System architecture" section of this README file. 
